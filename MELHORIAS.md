@@ -11,7 +11,11 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
   (exige um serviço de envio de e-mail, ex.: Resend/SendGrid, com domínio felipefurlan.com.br).
 - [ ] **Redefinição de senha pelo admin** — botão no painel (Estudantes/Academias) que gera uma
   senha temporária, para suporte manual enquanto não há fluxo por e-mail.
-- [ ] Verificação de e-mail no cadastro (confirma que o e-mail universitário existe).
+- [ ] **E-mail universitário verificado** — allowlist de domínios por universidade
+  (ex.: dac.unicamp.br, puccampinas.edu.br) gerenciada pelo admin + código de
+  verificação enviado por e-mail. Garante que só estudante real assina o plano.
+- [ ] **Rate limiting no login** — bloquear tentativas repetidas de senha (força bruta).
+  Barato (ex.: slowapi) e alto impacto de segurança.
 - [ ] Refresh token / expiração mais curta do JWT (hoje: 24h, sem renovação).
 
 ## App nativo (lojas)
@@ -21,6 +25,26 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [ ] Notificações push (lembrete de treino, confirmação de check-in, avisos da operação).
 - [ ] Publicação: Google Play (US$ 25 únicos, .aab assinado) e App Store
   (US$ 99/ano + build macOS via Codemagic/TestFlight).
+
+## Painel web
+
+- [ ] **Versão mobile/responsiva do painel** — hoje o layout é de desktop (menu lateral fixo
+  e tabelas largas). Adaptar para celular: menu lateral vira drawer/menu inferior, métricas
+  empilham, tabelas viram cards ou ganham rolagem horizontal. Vale para academia e admin —
+  o dono da academia vai querer conferir os repasses pelo celular.
+- [ ] **QR code real por academia** — o painel exibe/imprime o QR da academia (recepção);
+  o app escaneia para fazer o check-in. Fecha o ciclo anti-fraude de presença física.
+- [ ] **Relatório mensal automático por e-mail** para a academia (extrato PDF/CSV no
+  fechamento do mês).
+- [ ] **Métricas de negócio no admin** — evolução de assinantes, churn, MRR de assinaturas
+  vs. repasses mês a mês.
+
+## Qualidade (valor de TCC)
+
+- [ ] **Testes automatizados no backend (pytest)** — regras de tier, anti-fraude e cálculo
+  de repasse cobertas por testes.
+- [ ] **CI no GitHub Actions** — a cada push: testes do backend + `flutter analyze` dos
+  três projetos.
 
 ## Plataforma
 
