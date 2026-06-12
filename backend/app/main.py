@@ -4,7 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from slowapi.errors import RateLimitExceeded
+
 from app.core.config import settings
+from app.core.rate_limit import limiter, rate_limit_handler
 from app.routers import admin, auth, checkins, gym_portal, gyms, plans, students, subscriptions
 
 app = FastAPI(
@@ -15,6 +18,10 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+# Rate limiting por IP nas rotas de auth (ver app/core/rate_limit.py)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # CORS: dev local + domínios publicados (configurável via CORS_ORIGIN_REGEX)
 app.add_middleware(

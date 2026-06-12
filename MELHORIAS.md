@@ -14,8 +14,9 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [ ] **E-mail universitário verificado** — allowlist de domínios por universidade
   (ex.: dac.unicamp.br, puccampinas.edu.br) gerenciada pelo admin + código de
   verificação enviado por e-mail. Garante que só estudante real assina o plano.
-- [ ] **Rate limiting no login** — bloquear tentativas repetidas de senha (força bruta).
-  Barato (ex.: slowapi) e alto impacto de segurança.
+- [x] **Rate limiting no login** — feito (slowapi): 10 tentativas/min no login e
+  5/min no cadastro, por IP, com resposta 429 em PT-BR. IP real preservado atrás
+  do proxy do Railway (`--proxy-headers`).
 - [ ] Refresh token / expiração mais curta do JWT (hoje: 24h, sem renovação).
 
 ## App nativo (lojas)
