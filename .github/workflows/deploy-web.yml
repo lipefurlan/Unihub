@@ -1,0 +1,55 @@
+# Compila o app e o painel (Flutter Web) e publica no Netlify a cada push.
+# Requer 3 secrets no repositório (Settings > Secrets and variables > Actions):
+#   NETLIFY_AUTH_TOKEN     - token pessoal do Netlify
+#   NETLIFY_SITE_ID_APP    - Site ID do site do app (app.felipefurlan.com.br)
+#   NETLIFY_SITE_ID_PAINEL - Site ID do site do painel (painel.felipefurlan.com.br)
+name: Deploy web no Netlify
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "web_admin/**"
+      - "shared_models/**"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch: # permite rodar manualmente pela aba Actions
+
+env:
+  UNIHUB_API: https://api.felipefurlan.com.br
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build do app do estudante
+        working-directory: mobile
+        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }}
+
+      - name: Build do painel
+        working-directory: web_admin
+        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }}
+
+      - name: Redirects de SPA
+        run: |
+          echo "/* /index.html 200" > mobile/build/web/_redirects
+          echo "/* /index.html 200" > web_admin/build/web/_redirects
+
+      - name: Publica o app no Netlify
+        run: npx --yes netlify-cli@17 deploy --prod --dir mobile/build/web
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_APP }}
+
+      - name: Publica o painel no Netlify
+        run: npx --yes netlify-cli@17 deploy --prod --dir web_admin/build/web
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_PAINEL }}
