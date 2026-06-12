@@ -90,7 +90,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _fillFrom(gym);
 
     return ListView(
-      padding: const EdgeInsets.all(UniHubSpacing.x8),
+      padding: pagePadding(context),
       children: [
         const PageTitle(
           'Configurações',
@@ -106,26 +106,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Nome da academia'),
-                  validator: (v) =>
-                      v == null || v.trim().length < 2 ? 'Informe o nome' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da academia',
+                  ),
+                  validator: (v) => v == null || v.trim().length < 2
+                      ? 'Informe o nome'
+                      : null,
                 ),
                 const SizedBox(height: UniHubSpacing.x4),
                 TextFormField(
                   controller: _addressController,
                   decoration: const InputDecoration(labelText: 'Endereço'),
-                  validator: (v) =>
-                      v == null || v.trim().length < 5 ? 'Informe o endereço' : null,
+                  validator: (v) => v == null || v.trim().length < 5
+                      ? 'Informe o endereço'
+                      : null,
                 ),
                 const SizedBox(height: UniHubSpacing.x4),
                 TextFormField(
                   controller: _modalitiesController,
                   decoration: const InputDecoration(
                     labelText: 'Modalidades',
-                    helperText: 'Separadas por vírgula, ex.: musculação, funcional',
+                    helperText:
+                        'Separadas por vírgula, ex.: musculação, funcional',
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Informe ao menos uma' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Informe ao menos uma'
+                      : null,
                 ),
                 const SizedBox(height: UniHubSpacing.x4),
                 Row(
@@ -134,10 +140,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _capacityController,
-                        decoration: const InputDecoration(labelText: 'Capacidade (alunos)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Capacidade (alunos)',
+                        ),
                         validator: (v) {
                           final parsed = int.tryParse(v ?? '');
-                          if (parsed == null || parsed <= 0) return 'Número inválido';
+                          if (parsed == null || parsed <= 0) {
+                            return 'Número inválido';
+                          }
                           return null;
                         },
                       ),
@@ -150,8 +160,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           labelText: 'Horário de funcionamento',
                           helperText: 'Ex.: 06:00–23:00',
                         ),
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Informe o horário' : null,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Informe o horário'
+                            : null,
                       ),
                     ),
                   ],
@@ -166,23 +177,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: UniHubSpacing.x2),
                 const Text(
                   'Estes valores são definidos em contrato. Para alterá-los, fale com a operação UniHub.',
-                  style: TextStyle(fontSize: 12.5, color: UniHubColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: UniHubColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: UniHubSpacing.x4),
-                Row(
+                MetricRow(
                   children: [
-                    Expanded(
-                      child: MetricBlock(
-                        label: 'Repasse por check-in',
-                        value: formatBRL(gym.checkinPayoutAmount ?? 0),
-                        highlight: true,
-                      ),
+                    MetricBlock(
+                      label: 'Repasse por check-in',
+                      value: formatBRL(gym.checkinPayoutAmount ?? 0),
+                      highlight: true,
                     ),
-                    Expanded(
-                      child: MetricBlock(
-                        label: 'Tier mínimo de acesso',
-                        value: 'Plano ${gym.minPlanTier}+',
-                      ),
+                    MetricBlock(
+                      label: 'Tier mínimo de acesso',
+                      value: 'Plano ${gym.minPlanTier}+',
                     ),
                   ],
                 ),
@@ -193,8 +203,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ? const SizedBox(
                           height: 18,
                           width: 18,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Salvar alterações'),
                 ),

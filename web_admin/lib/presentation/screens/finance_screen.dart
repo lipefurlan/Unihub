@@ -44,7 +44,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         final current = payouts.first;
 
         return ListView(
-          padding: const EdgeInsets.all(UniHubSpacing.x8),
+          padding: pagePadding(context),
           children: [
             const PageTitle(
               'Financeiro',
@@ -53,33 +53,24 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             ),
             const SizedBox(height: UniHubSpacing.x8),
             // Extrato do mês corrente: a conta que importa, em destaque
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            MetricRow(
               children: [
-                Expanded(
-                  child: MetricBlock(
-                    label:
-                        'Mês corrente (${monthLabelShort(current.referenceMonth)})',
-                    value: '${current.totalCheckins} check-ins',
-                  ),
+                MetricBlock(
+                  label:
+                      'Mês corrente (${monthLabelShort(current.referenceMonth)})',
+                  value: '${current.totalCheckins} check-ins',
                 ),
-                Expanded(
-                  child: MetricBlock(
-                    label: 'Valor médio por check-in',
-                    value: current.totalCheckins == 0
-                        ? '—'
-                        : formatBRL(
-                            current.totalAmount / current.totalCheckins,
-                          ),
-                  ),
+                MetricBlock(
+                  label: 'Valor médio por check-in',
+                  value: current.totalCheckins == 0
+                      ? '—'
+                      : formatBRL(current.totalAmount / current.totalCheckins),
                 ),
-                Expanded(
-                  child: MetricBlock(
-                    label: 'A receber no mês',
-                    value: formatBRL(current.totalAmount),
-                    detail: 'em apuração até o fechamento',
-                    highlight: true,
-                  ),
+                MetricBlock(
+                  label: 'A receber no mês',
+                  value: formatBRL(current.totalAmount),
+                  detail: 'em apuração até o fechamento',
+                  highlight: true,
                 ),
               ],
             ),
@@ -91,8 +82,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: UniHubSpacing.x4),
-            SizedBox(
-              width: double.infinity,
+            ResponsiveTable(
               child: DataTable(
                 showCheckboxColumn: false,
                 columns: const [
@@ -261,8 +251,7 @@ class _MonthDetailState extends ConsumerState<_MonthDetail> {
               ),
             ),
             const SizedBox(height: UniHubSpacing.x4),
-            SizedBox(
-              width: double.infinity,
+            ResponsiveTable(
               child: DataTable(
                 sortColumnIndex: _sortColumn,
                 sortAscending: _ascending,

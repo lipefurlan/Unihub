@@ -17,52 +17,50 @@ class AdminOverviewScreen extends ConsumerWidget {
     return overviewAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-        child: Text('$e', style: const TextStyle(color: UniHubColors.textSecondary)),
+        child: Text(
+          '$e',
+          style: const TextStyle(color: UniHubColors.textSecondary),
+        ),
       ),
       data: (o) => ListView(
-        padding: const EdgeInsets.all(UniHubSpacing.x8),
+        padding: pagePadding(context),
         children: [
           PageTitle(
             'Visão geral',
             subtitle: 'A plataforma no mês corrente',
             action: IconButton(
               onPressed: () => ref.invalidate(adminOverviewProvider),
-              icon: const Icon(LucideIcons.refreshCw, size: 18, color: UniHubColors.textSecondary),
+              icon: const Icon(
+                LucideIcons.refreshCw,
+                size: 18,
+                color: UniHubColors.textSecondary,
+              ),
               tooltip: 'Atualizar',
             ),
           ),
           const SizedBox(height: UniHubSpacing.x8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          MetricRow(
             children: [
-              Expanded(
-                child: MetricBlock(
-                  label: 'Estudantes ativos',
-                  value: '${o.activeStudents}',
-                  detail: 'assinaturas vigentes',
-                ),
+              MetricBlock(
+                label: 'Estudantes ativos',
+                value: '${o.activeStudents}',
+                detail: 'assinaturas vigentes',
               ),
-              Expanded(
-                child: MetricBlock(
-                  label: 'Receita de assinaturas',
-                  value: formatBRL(o.subscriptionRevenue),
-                  detail: 'por mês',
-                ),
+              MetricBlock(
+                label: 'Receita de assinaturas',
+                value: formatBRL(o.subscriptionRevenue),
+                detail: 'por mês',
               ),
-              Expanded(
-                child: MetricBlock(
-                  label: 'Repasses do mês',
-                  value: formatBRL(o.monthPayoutTotal),
-                  detail: '${o.monthCheckins} check-ins',
-                ),
+              MetricBlock(
+                label: 'Repasses do mês',
+                value: formatBRL(o.monthPayoutTotal),
+                detail: '${o.monthCheckins} check-ins',
               ),
-              Expanded(
-                child: MetricBlock(
-                  label: 'Margem estimada',
-                  value: formatBRL(o.estimatedMargin),
-                  detail: 'assinaturas − repasses',
-                  highlight: true,
-                ),
+              MetricBlock(
+                label: 'Margem estimada',
+                value: formatBRL(o.estimatedMargin),
+                detail: 'assinaturas − repasses',
+                highlight: true,
               ),
             ],
           ),
@@ -85,7 +83,9 @@ class AdminOverviewScreen extends ConsumerWidget {
                 for (final (i, g) in o.topGyms.indexed) ...[
                   if (i > 0) const Divider(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: UniHubSpacing.x3),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: UniHubSpacing.x3,
+                    ),
                     child: Row(
                       children: [
                         SizedBox(
@@ -95,19 +95,27 @@ class AdminOverviewScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: i == 0 ? UniHubColors.accent : UniHubColors.textSecondary,
+                              color: i == 0
+                                  ? UniHubColors.accent
+                                  : UniHubColors.textSecondary,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Text(
                             g.gymName,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         Text(
                           '${g.checkins} check-ins',
-                          style: UniHubStyles.money(size: 14, weight: FontWeight.w500),
+                          style: UniHubStyles.money(
+                            size: 14,
+                            weight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),

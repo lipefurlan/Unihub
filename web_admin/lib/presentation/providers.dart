@@ -9,7 +9,10 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
 
 final authRepositoryProvider = Provider<PanelAuthRepository>(
-  (ref) => PanelAuthRepository(ref.watch(apiClientProvider), ref.watch(tokenStorageProvider)),
+  (ref) => PanelAuthRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(tokenStorageProvider),
+  ),
 );
 
 /// Sessão do painel: academia ou admin (null = deslogado).
@@ -27,7 +30,9 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
   }
 
   Future<void> login(String email, String password) async {
-    final session = await ref.read(authRepositoryProvider).login(email, password);
+    final session = await ref
+        .read(authRepositoryProvider)
+        .login(email, password);
     state = AsyncData(session);
   }
 
@@ -43,9 +48,10 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
   }
 }
 
-final sessionProvider = AsyncNotifierProvider<PanelSessionNotifier, PanelSession?>(
-  PanelSessionNotifier.new,
-);
+final sessionProvider =
+    AsyncNotifierProvider<PanelSessionNotifier, PanelSession?>(
+      PanelSessionNotifier.new,
+    );
 
 // --------------------------------------------------------- dados (academia)
 
@@ -79,9 +85,11 @@ final adminGymsProvider = FutureProvider<List<AdminGym>>(
   (ref) => ref.watch(apiClientProvider).getAdminGyms(),
 );
 
-final adminPayoutsProvider = FutureProvider.family<List<AdminPayoutRow>, String>(
-  (ref, month) => ref.watch(apiClientProvider).getAdminPayouts(month: month),
-);
+final adminPayoutsProvider =
+    FutureProvider.family<List<AdminPayoutRow>, String>(
+      (ref, month) =>
+          ref.watch(apiClientProvider).getAdminPayouts(month: month),
+    );
 
 final adminStudentsProvider = FutureProvider<List<AdminStudentRow>>(
   (ref) => ref.watch(apiClientProvider).getAdminStudents(),

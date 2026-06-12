@@ -53,20 +53,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(child: UniHubWordmark(size: 28, suffix: 'painel')),
+                  const Center(
+                    child: UniHubWordmark(size: 28, suffix: 'painel'),
+                  ),
                   const SizedBox(height: UniHubSpacing.x2),
                   const Text(
                     'Acesso para academias parceiras e para a operação UniHub.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: UniHubColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: UniHubColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: UniHubSpacing.x10),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(labelText: 'E-mail'),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (v) =>
-                        v == null || !v.contains('@') ? 'Informe um e-mail válido' : null,
+                    validator: (v) => v == null || !v.contains('@')
+                        ? 'Informe um e-mail válido'
+                        : null,
                   ),
                   const SizedBox(height: UniHubSpacing.x4),
                   TextFormField(
@@ -74,7 +80,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: const InputDecoration(labelText: 'Senha'),
                     obscureText: true,
                     onFieldSubmitted: (_) => _submit(),
-                    validator: (v) => v == null || v.isEmpty ? 'Informe a senha' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Informe a senha' : null,
                   ),
                   const SizedBox(height: UniHubSpacing.x6),
                   FilledButton(
@@ -83,8 +90,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(
                             height: 18,
                             width: 18,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Entrar no painel'),
                   ),
@@ -93,7 +102,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Demo academia: contato@campusfit.com.br · academia123\n'
                     'Demo operação: admin@unihub.com.br · admin123',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: UniHubColors.textSecondary, height: 1.6),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: UniHubColors.textSecondary,
+                      height: 1.6,
+                    ),
                   ),
                 ],
               ),

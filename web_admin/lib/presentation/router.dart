@@ -16,8 +16,14 @@ import 'screens/shell_screen.dart';
 import 'screens/students_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authListenable = ValueNotifier<AsyncValue<PanelSession?>>(const AsyncValue.loading());
-  ref.listen(sessionProvider, (_, next) => authListenable.value = next, fireImmediately: true);
+  final authListenable = ValueNotifier<AsyncValue<PanelSession?>>(
+    const AsyncValue.loading(),
+  );
+  ref.listen(
+    sessionProvider,
+    (_, next) => authListenable.value = next,
+    fireImmediately: true,
+  );
   ref.onDispose(authListenable.dispose);
 
   return GoRouter(
@@ -52,15 +58,39 @@ final routerProvider = Provider<GoRouter>((ref) {
             ShellScreen(location: state.matchedLocation, child: child),
         routes: [
           // Área da academia
-          GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/students', builder: (context, state) => const StudentsScreen()),
-          GoRoute(path: '/finance', builder: (context, state) => const FinanceScreen()),
-          GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/students',
+            builder: (context, state) => const StudentsScreen(),
+          ),
+          GoRoute(
+            path: '/finance',
+            builder: (context, state) => const FinanceScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
           // Área da operação UniHub
-          GoRoute(path: '/admin/overview', builder: (context, state) => const AdminOverviewScreen()),
-          GoRoute(path: '/admin/gyms', builder: (context, state) => const AdminGymsScreen()),
-          GoRoute(path: '/admin/payouts', builder: (context, state) => const AdminPayoutsScreen()),
-          GoRoute(path: '/admin/students', builder: (context, state) => const AdminStudentsScreen()),
+          GoRoute(
+            path: '/admin/overview',
+            builder: (context, state) => const AdminOverviewScreen(),
+          ),
+          GoRoute(
+            path: '/admin/gyms',
+            builder: (context, state) => const AdminGymsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/payouts',
+            builder: (context, state) => const AdminPayoutsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/students',
+            builder: (context, state) => const AdminStudentsScreen(),
+          ),
         ],
       ),
     ],

@@ -79,7 +79,7 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
           });
 
         return ListView(
-          padding: const EdgeInsets.all(UniHubSpacing.x8),
+          padding: pagePadding(context),
           children: [
             PageTitle(
               'Estudantes',
@@ -117,8 +117,7 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
               ],
             ),
             const SizedBox(height: UniHubSpacing.x6),
-            SizedBox(
-              width: double.infinity,
+            ResponsiveTable(
               child: DataTable(
                 sortColumnIndex: _sortColumn,
                 sortAscending: _ascending,

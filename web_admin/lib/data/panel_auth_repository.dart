@@ -8,13 +8,11 @@ class PanelSession {
   final Gym? gym;
   final AdminProfile? admin;
 
-  const PanelSession.gym(Gym this.gym)
-      : role = 'gym',
-        admin = null;
+  const PanelSession.gym(Gym this.gym) : role = 'gym', admin = null;
 
   const PanelSession.admin(AdminProfile this.admin)
-      : role = 'admin',
-        gym = null;
+    : role = 'admin',
+      gym = null;
 
   bool get isAdmin => role == 'admin';
 
@@ -53,7 +51,8 @@ class PanelAuthRepository {
     return PanelSession.gym(await _api.getMyGym());
   }
 
-  Future<PanelSession> refresh(PanelSession current) => _fetchProfile(current.role);
+  Future<PanelSession> refresh(PanelSession current) =>
+      _fetchProfile(current.role);
 
   Future<void> logout() async {
     _api.token = null;

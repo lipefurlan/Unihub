@@ -132,7 +132,7 @@ class _AdminGymsScreenState extends ConsumerState<AdminGymsScreen> {
         }
 
         return ListView(
-          padding: const EdgeInsets.all(UniHubSpacing.x8),
+          padding: pagePadding(context),
           children: [
             PageTitle(
               'Academias',
@@ -436,7 +436,8 @@ class _GymFormDialogState extends ConsumerState<_GymFormDialog> {
         isNew ? 'Credenciar nova academia' : 'Editar ${widget.gym!.name}',
       ),
       content: SizedBox(
-        width: 560,
+        // No celular ocupa a largura disponível; no desktop, formulário largo
+        width: isMobile(context) ? double.maxFinite : 560,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(

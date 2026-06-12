@@ -170,6 +170,62 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
+/// Breakpoint único do painel: abaixo disso, layout de celular.
+bool isMobile(BuildContext context) => MediaQuery.sizeOf(context).width < 760;
+
+/// Padding de página: generoso no desktop, compacto no celular.
+EdgeInsets pagePadding(BuildContext context) =>
+    EdgeInsets.all(isMobile(context) ? UniHubSpacing.x4 : UniHubSpacing.x8);
+
+/// Linha de métricas: lado a lado no desktop, grade 2 colunas no celular.
+class MetricRow extends StatelessWidget {
+  const MetricRow({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isMobile(context)) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [for (final c in children) Expanded(child: c)],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - UniHubSpacing.x4) / 2;
+        return Wrap(
+          spacing: UniHubSpacing.x4,
+          runSpacing: UniHubSpacing.x5,
+          children: [
+            for (final c in children) SizedBox(width: itemWidth, child: c),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Tabela larga com rolagem horizontal no celular (sem cortar colunas).
+class ResponsiveTable extends StatelessWidget {
+  const ResponsiveTable({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 /// Dropdown de filtro minimalista usado nas tabelas (null = todos).
 class FilterDropdown extends StatelessWidget {
   const FilterDropdown({

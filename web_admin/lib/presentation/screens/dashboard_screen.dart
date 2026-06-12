@@ -17,60 +17,60 @@ class DashboardScreen extends ConsumerWidget {
     return dashboardAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-        child: Text('$e', style: const TextStyle(color: UniHubColors.textSecondary)),
+        child: Text(
+          '$e',
+          style: const TextStyle(color: UniHubColors.textSecondary),
+        ),
       ),
       data: (d) {
         final checkinDelta = _deltaLabel(d.monthCheckins, d.prevMonthCheckins);
-        final revenueDelta = _deltaLabel(d.estimatedRevenue, d.prevMonthRevenue);
+        final revenueDelta = _deltaLabel(
+          d.estimatedRevenue,
+          d.prevMonthRevenue,
+        );
 
         return RefreshIndicator(
           color: UniHubColors.accent,
           onRefresh: () async => ref.invalidate(dashboardProvider),
           child: ListView(
-            padding: const EdgeInsets.all(UniHubSpacing.x8),
+            padding: pagePadding(context),
             children: [
               PageTitle(
                 'Dashboard',
                 subtitle: 'Visão do mês corrente',
                 action: IconButton(
                   onPressed: () => ref.invalidate(dashboardProvider),
-                  icon: const Icon(LucideIcons.refreshCw,
-                      size: 18, color: UniHubColors.textSecondary),
+                  icon: const Icon(
+                    LucideIcons.refreshCw,
+                    size: 18,
+                    color: UniHubColors.textSecondary,
+                  ),
                   tooltip: 'Atualizar',
                 ),
               ),
               const SizedBox(height: UniHubSpacing.x8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              MetricRow(
                 children: [
-                  Expanded(
-                    child: MetricBlock(
-                      label: 'Check-ins no mês',
-                      value: '${d.monthCheckins}',
-                      detail: checkinDelta,
-                    ),
+                  MetricBlock(
+                    label: 'Check-ins no mês',
+                    value: '${d.monthCheckins}',
+                    detail: checkinDelta,
                   ),
-                  Expanded(
-                    child: MetricBlock(
-                      label: 'Alunos únicos',
-                      value: '${d.uniqueStudents}',
-                      detail: 'atendidos no mês',
-                    ),
+                  MetricBlock(
+                    label: 'Alunos únicos',
+                    value: '${d.uniqueStudents}',
+                    detail: 'atendidos no mês',
                   ),
-                  Expanded(
-                    child: MetricBlock(
-                      label: 'Receita estimada de repasse',
-                      value: formatBRL(d.estimatedRevenue),
-                      detail: revenueDelta,
-                      highlight: true,
-                    ),
+                  MetricBlock(
+                    label: 'Receita estimada de repasse',
+                    value: formatBRL(d.estimatedRevenue),
+                    detail: revenueDelta,
+                    highlight: true,
                   ),
-                  Expanded(
-                    child: MetricBlock(
-                      label: 'Mês anterior',
-                      value: formatBRL(d.prevMonthRevenue),
-                      detail: '${d.prevMonthCheckins} check-ins',
-                    ),
+                  MetricBlock(
+                    label: 'Mês anterior',
+                    value: formatBRL(d.prevMonthRevenue),
+                    detail: '${d.prevMonthCheckins} check-ins',
                   ),
                 ],
               ),
@@ -91,7 +91,10 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: UniHubSpacing.x6),
-              SizedBox(height: 220, child: _HourRangeChart(data: d.checkinsByHourRange)),
+              SizedBox(
+                height: 220,
+                child: _HourRangeChart(data: d.checkinsByHourRange),
+              ),
             ],
           ),
         );
@@ -114,7 +117,8 @@ class _DailyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxY = data.fold<int>(0, (m, d) => d.count > m ? d.count : m).toDouble() + 1;
+    final maxY =
+        data.fold<int>(0, (m, d) => d.count > m ? d.count : m).toDouble() + 1;
 
     return LineChart(
       LineChartData(
@@ -137,7 +141,10 @@ class _DailyChart extends StatelessWidget {
               interval: maxY > 8 ? (maxY / 4).ceilToDouble() : 1,
               getTitlesWidget: (value, _) => Text(
                 value.toInt().toString(),
-                style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: UniHubColors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -154,7 +161,10 @@ class _DailyChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     '$day/$month',
-                    style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: UniHubColors.textSecondary,
+                    ),
                   ),
                 );
               },
@@ -166,17 +176,20 @@ class _DailyChart extends StatelessWidget {
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => UniHubColors.textPrimary,
             getTooltipItems: (spots) => spots
-                .map((s) => LineTooltipItem(
-                      '${data[s.x.toInt()].date.substring(8, 10)}/${data[s.x.toInt()].date.substring(5, 7)}: ${s.y.toInt()} check-ins',
-                      const TextStyle(color: Colors.white, fontSize: 12),
-                    ))
+                .map(
+                  (s) => LineTooltipItem(
+                    '${data[s.x.toInt()].date.substring(8, 10)}/${data[s.x.toInt()].date.substring(5, 7)}: ${s.y.toInt()} check-ins',
+                    const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                )
                 .toList(),
           ),
         ),
         lineBarsData: [
           LineChartBarData(
             spots: [
-              for (final (i, d) in data.indexed) FlSpot(i.toDouble(), d.count.toDouble()),
+              for (final (i, d) in data.indexed)
+                FlSpot(i.toDouble(), d.count.toDouble()),
             ],
             isCurved: false,
             color: UniHubColors.accent,
@@ -220,7 +233,10 @@ class _HourRangeChart extends StatelessWidget {
               interval: maxY > 8 ? (maxY / 4).ceilToDouble() : 1,
               getTitlesWidget: (value, _) => Text(
                 value.toInt().toString(),
-                style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: UniHubColors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -234,7 +250,10 @@ class _HourRangeChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     data[i].label,
-                    style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: UniHubColors.textSecondary,
+                    ),
                   ),
                 );
               },
@@ -259,7 +278,9 @@ class _HourRangeChart extends StatelessWidget {
                 BarChartRodData(
                   toY: d.count.toDouble(),
                   width: 28,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(3),
+                  ),
                   // A barra de pico ganha o laranja; as demais ficam neutras
                   color: d.count == maxCount && maxCount > 0
                       ? UniHubColors.accent

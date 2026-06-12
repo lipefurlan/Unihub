@@ -95,7 +95,7 @@ class _AdminPayoutsScreenState extends ConsumerState<AdminPayoutsScreen> {
     final payoutsAsync = ref.watch(adminPayoutsProvider(_month));
 
     return ListView(
-      padding: const EdgeInsets.all(UniHubSpacing.x8),
+      padding: pagePadding(context),
       children: [
         PageTitle(
           'Repasses',
@@ -157,21 +157,17 @@ class _AdminPayoutsScreenState extends ConsumerState<AdminPayoutsScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                MetricRow(
                   children: [
-                    Expanded(
-                      child: MetricBlock(
-                        label: 'Total do mês',
-                        value: formatBRL(total),
-                        detail: '${rows.length} academias',
-                      ),
+                    MetricBlock(
+                      label: 'Total do mês',
+                      value: formatBRL(total),
+                      detail: '${rows.length} academias',
                     ),
-                    Expanded(
-                      child: MetricBlock(
-                        label: 'Pendente de pagamento',
-                        value: formatBRL(pending),
-                        highlight: pending > 0,
-                      ),
+                    MetricBlock(
+                      label: 'Pendente de pagamento',
+                      value: formatBRL(pending),
+                      highlight: pending > 0,
                     ),
                   ],
                 ),
@@ -187,8 +183,7 @@ class _AdminPayoutsScreenState extends ConsumerState<AdminPayoutsScreen> {
                   ),
                 ),
                 const SizedBox(height: UniHubSpacing.x4),
-                SizedBox(
-                  width: double.infinity,
+                ResponsiveTable(
                   child: DataTable(
                     sortColumnIndex: _sortColumn,
                     sortAscending: _ascending,
