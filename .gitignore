@@ -1,0 +1,20 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/unihub.db
+backend/uploads/
+backend/.env
+
+# Flutter / Dart
+**/.dart_tool/
+**/build/
+**/.flutter-plugins*
+**/pubspec.lock
+
+# Artefatos de deploy gerados localmente
+deploy/
+
+# Locais
+.claude/
+*.log
