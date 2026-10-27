@@ -47,3 +47,38 @@ class StudentStatsOut(BaseModel):
     month_checkins: int
     month_gyms: int
     month_top_gym: str | None
+
+
+class BadgeOut(BaseModel):
+    code: str
+    title: str
+    description: str
+    target: int
+    progress: int
+    achieved: bool
+
+
+class AchievementsOut(BaseModel):
+    total_checkins: int
+    gyms_visited: int
+    current_streak: int
+    best_streak: int
+    badges: list[BadgeOut]
+
+
+class ChallengeRow(BaseModel):
+    position: int
+    university_id: int
+    university: str
+    subscribers: int
+    checkins: int
+    score: float  # check-ins do mês por assinante
+
+
+class ChallengeOut(BaseModel):
+    title: str
+    description: str
+    ends_on: str
+    my_university_id: int | None
+    my_checkins: int
+    ranking: list[ChallengeRow]

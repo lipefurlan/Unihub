@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import CheckIn, Gym, Payout, Student, Subscription
+from app.services.engagement_service import attach_ratings
 
 # Faixas de horário usadas no gráfico de ocupação do painel
 HOUR_RANGES = [(0, 6), (6, 9), (9, 12), (12, 15), (15, 18), (18, 21), (21, 24)]
@@ -128,7 +129,10 @@ def build_dashboard(db: Session, gym: Gym) -> dict:
         for start_h, end_h in HOUR_RANGES
     ]
 
+    attach_ratings(db, [gym])
     return {
+        "rating_avg": gym.rating_avg,
+        "rating_count": gym.rating_count,
         "month_checkins": month_checkins_count,
         "unique_students": unique_students or 0,
         "estimated_revenue": float(month_revenue),

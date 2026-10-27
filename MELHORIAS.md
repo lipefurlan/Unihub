@@ -47,6 +47,12 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [x] Pausar e retomar o plano (férias).
 - [x] Cidade natal e filtro por cidade no Explorar.
 - [x] Academias favoritas e horário mais tranquilo de cada academia.
+- [x] Avaliar a visita (1 a 5 estrelas); nota média nos cards e no painel da academia.
+- [x] Perfil com conquistas (selos) e card da sequência de semanas.
+- [x] Desafio do mês entre faculdades (check-ins por assinante) com ranking.
+- [x] Explorar com carrosséis "Perto de você" e "Bombando nesta semana" e troca de localização.
+- [ ] Indique um amigo (código e link de convite).
+- [ ] Reserva de aulas (precisa da agenda das academias).
 
 ## Qualidade (valor de TCC)
 

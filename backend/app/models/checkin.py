@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -28,6 +28,8 @@ class CheckIn(Base):
     # Vale só para esta visita, como um ingresso; validated_at = entrada confirmada.
     entry_code: Mapped[str | None] = mapped_column(String(12), index=True)
     validated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Avaliação do aluno depois do treino (1 a 5 estrelas), opcional
+    rating: Mapped[int | None] = mapped_column(SmallInteger)
 
     student: Mapped["Student"] = relationship(back_populates="checkins")  # noqa: F821
     gym: Mapped["Gym"] = relationship(back_populates="checkins")  # noqa: F821

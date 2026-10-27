@@ -10,6 +10,7 @@ class CheckIn {
   /// Só na resposta do check-in: código que a recepção valida
   final String? entryCode;
   final bool isPaid;
+  final int? rating; // estrelas que o aluno deu (null = ainda não avaliou)
 
   const CheckIn({
     required this.id,
@@ -18,6 +19,7 @@ class CheckIn {
     required this.planTierAtCheckin,
     this.entryCode,
     this.isPaid = true,
+    this.rating,
   });
 
   factory CheckIn.fromJson(Map<String, dynamic> json) => CheckIn(
@@ -26,6 +28,7 @@ class CheckIn {
         timestamp: DateTime.parse(json['timestamp'] as String),
         planTierAtCheckin: json['plan_tier_at_checkin'] as int,
         entryCode: json['entry_code'] as String?,
+        rating: json['rating'] as int?,
         isPaid: json['is_paid'] as bool? ?? true,
       );
 }

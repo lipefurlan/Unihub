@@ -82,12 +82,41 @@ final gymsProvider = FutureProvider<List<Gym>>(
   (ref) => ref.watch(apiClientProvider).getGyms(),
 );
 
-/// Localização do aluno (real se permitida, senão o campus).
-final userLocationProvider = FutureProvider<UserLocation>((ref) async {
-  final location = await fetchUserLocation();
-  UserLocation.current = location;
-  return location;
-});
+/// Localização do aluno: real se permitida, senão o campus. O aluno também
+/// pode escolher o campus ou uma cidade no Explorar.
+class UserLocationNotifier extends AsyncNotifier<UserLocation> {
+  @override
+  Future<UserLocation> build() async {
+    final location = await fetchUserLocation();
+    UserLocation.current = location;
+    return location;
+  }
+
+  void choose(UserLocation location) {
+    UserLocation.current = location;
+    state = AsyncData(location);
+  }
+
+  Future<void> useDevice() async {
+    state = const AsyncLoading();
+    choose(await fetchUserLocation());
+  }
+}
+
+final userLocationProvider =
+    AsyncNotifierProvider<UserLocationNotifier, UserLocation>(UserLocationNotifier.new);
+
+final trendingGymsProvider = FutureProvider<List<TrendingGym>>(
+  (ref) => ref.watch(apiClientProvider).getTrendingGyms(),
+);
+
+final achievementsProvider = FutureProvider<Achievements>(
+  (ref) => ref.watch(apiClientProvider).getMyAchievements(),
+);
+
+final challengeProvider = FutureProvider<Challenge>(
+  (ref) => ref.watch(apiClientProvider).getChallenge(),
+);
 
 final gymCitiesProvider = FutureProvider<List<String>>(
   (ref) => ref.watch(apiClientProvider).getGymCities(),

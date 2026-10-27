@@ -10,8 +10,16 @@ from app.core.security import get_current_student
 from app.models import CheckIn, Gym, Student
 from app.schemas.checkin import CheckInOut
 from app.schemas.gym import GymPublicOut
-from app.schemas.student import StudentOut, StudentProfileOut, StudentStatsOut, StudentUpdate
+from app.schemas.student import (
+    AchievementsOut,
+    ChallengeOut,
+    StudentOut,
+    StudentProfileOut,
+    StudentStatsOut,
+    StudentUpdate,
+)
 from app.schemas.subscription import SubscriptionOut
+from app.services import engagement_service
 
 router = APIRouter(prefix="/students/me", tags=["Estudante"])
 
@@ -56,12 +64,14 @@ def get_my_subscription(student: Student = Depends(get_current_student)):
 
 @router.get("/checkins", response_model=list[CheckInOut])
 def get_my_checkins(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    return db.scalars(
+    checkins = db.scalars(
         select(CheckIn)
         .options(selectinload(CheckIn.gym))
         .where(CheckIn.student_id == student.id)
         .order_by(CheckIn.timestamp.desc())
     ).all()
+    engagement_service.attach_ratings(db, list({c.gym_id: c.gym for c in checkins}.values()))
+    return checkins
 
 
 @router.get("/stats", response_model=StudentStatsOut)
@@ -77,17 +87,9 @@ def get_my_stats(student: Student = Depends(get_current_student), db: Session = 
         .where(CheckIn.student_id == student.id, CheckIn.timestamp >= since)
     ).all()
 
-    per_week = Counter(
-        c.timestamp.date() - timedelta(days=c.timestamp.weekday()) for c in checkins
-    )
+    per_week = engagement_service.checkins_per_week(checkins)
     goal = student.weekly_goal
-
-    # Sequência: semanas seguidas com a meta batida, contando a atual só se já bateu
-    streak = 0
-    week = this_monday if per_week[this_monday] >= goal else this_monday - timedelta(weeks=1)
-    while per_week[week] >= goal:
-        streak += 1
-        week -= timedelta(weeks=1)
+    streak, _ = engagement_service.week_streaks(per_week, goal, today)
 
     last_weeks = []
     for i in range(STATS_WEEKS - 1, -1, -1):
@@ -110,8 +112,20 @@ def get_my_stats(student: Student = Depends(get_current_student), db: Session = 
 
 
 @router.get("/favorites", response_model=list[GymPublicOut])
-def get_my_favorites(student: Student = Depends(get_current_student)):
-    return sorted(student.favorite_gyms, key=lambda g: g.name)
+def get_my_favorites(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+    return engagement_service.attach_ratings(db, sorted(student.favorite_gyms, key=lambda g: g.name))
+
+
+@router.get("/achievements", response_model=AchievementsOut)
+def get_my_achievements(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+    """Totais, sequência atual e a melhor, e os selos (conquistados ou em progresso)."""
+    return engagement_service.achievements(db, student)
+
+
+@router.get("/challenge", response_model=ChallengeOut)
+def get_challenge(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+    """Desafio do mês entre faculdades, com a posição da faculdade do aluno."""
+    return engagement_service.university_challenge(db, student)
 
 
 @router.put("/favorites/{gym_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -108,6 +108,7 @@ cd backend
 - **Anti-fraud:** at most one check-in per student per gym every 3 hours (configurable).
 - **Commercial terms:** payout amount and minimum tier are set by the admin during onboarding; the gym can see them but not change them.
 - **Entry code:** each check-in gets a 6-character code (shown as a QR in the app) that the gym's reception validates in the panel; it only works at that gym and for 3 hours.
+- **Ratings and engagement:** students rate visits (1–5 stars, shown as the gym's average); achievements and the monthly university challenge (check-ins per subscriber) are computed on the fly in `engagement_service.py`.
 - **Pause:** a paused plan blocks check-ins until the student resumes it.
 - **Weekly goal:** weeks run Monday to Sunday; the streak counts consecutive weeks with the goal met (the current week counts once it is met).
 - **University portal:** a university sees how many of its students signed up, subscribe and train, plus its invoice. It never sees locations or times.
