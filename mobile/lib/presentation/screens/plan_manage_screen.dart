@@ -29,7 +29,7 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(current == null ? 'Assinar ${plan.name}?' : 'Trocar para ${plan.name}?'),
         content: Text(
-          '${formatBRL(plan.monthlyPrice)}/mês. ${plan.benefitsDescription} '
+          '${_priceLabel(student, plan)}. ${plan.benefitsDescription} '
           '(POC: nenhuma cobrança real será feita.)',
         ),
         actions: [
@@ -135,7 +135,21 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
                       ),
                     ),
                     const SizedBox(width: UniHubSpacing.x3),
-                    Text('${formatBRL(plan.monthlyPrice)}/mês', style: UniHubStyles.money(size: 14)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${formatBRL(student?.priceFor(plan) ?? plan.monthlyPrice)}/mês',
+                          style: UniHubStyles.money(size: 14),
+                        ),
+                        if ((student?.universitySubsidy ?? 0) > 0)
+                          Text(
+                            'com subsídio da ${student!.university}',
+                            style: const TextStyle(
+                                fontSize: 11, color: UniHubColors.textSecondary),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -145,4 +159,12 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
       ),
     );
   }
+}
+
+/// "R$ 120,00/mês (R$ 130,00 menos R$ 10,00 de subsídio da Unicamp)".
+String _priceLabel(Student student, Plan plan) {
+  final price = '${formatBRL(student.priceFor(plan))}/mês';
+  if (student.universitySubsidy <= 0) return price;
+  return '$price (${formatBRL(plan.monthlyPrice)} menos '
+      '${formatBRL(student.universitySubsidy)} de subsídio da ${student.university})';
 }

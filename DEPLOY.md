@@ -54,9 +54,51 @@ No celular: abrir a URL no navegador → menu **Compartilhar → Adicionar à Te
   ```
   (e copie `build/web` para `deploy/app` e `deploy/painel`, mantendo o arquivo `_redirects`)
 
+## Login com Google e "esqueci minha senha" (configuração única)
+
+Os dois recursos já estão no código e ficam desligados até você configurar. Sem configuração, o botão do Google não aparece e o link de redefinição de senha só sai no log da API.
+
+### Login com Google (grátis)
+
+1. Entre em **console.cloud.google.com**, crie um projeto (ex.: `UniHub`).
+2. **APIs e serviços → Tela de permissão OAuth**: tipo **Externo**, nome `UniHub`, e-mail de suporte, domínio `felipefurlan.com.br`. Publique o app (enquanto estiver "em teste", só os e-mails que você listar conseguem entrar).
+3. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**, tipo **Aplicativo da Web**. Em **Origens JavaScript autorizadas**, adicione:
+   - `https://app.felipefurlan.com.br`
+   - `https://painel.felipefurlan.com.br`
+   - `http://localhost:5000` e `http://localhost:5001` (para testar local)
+4. Copie o **ID do cliente** (termina em `.apps.googleusercontent.com`) e coloque em dois lugares:
+   - **Railway → serviço da API → Variables**: `GOOGLE_CLIENT_ID`
+   - **GitHub → Settings → Secrets and variables → Actions → aba Variables**: `GOOGLE_CLIENT_ID`
+5. Rode o deploy dos frontends de novo (aba **Actions → Deploy web no Netlify → Run workflow**).
+
+No app do estudante, o Google cria a conta no primeiro acesso, desde que o e-mail seja de uma IES conveniada. No painel, ele só entra em conta de academia/admin que já existe.
+
+### E-mail de redefinição de senha (Resend, grátis até 3.000 e-mails/mês)
+
+1. Crie a conta em **resend.com** → **Domains → Add domain** → `felipefurlan.com.br`.
+2. O Resend mostra 3 ou 4 registros DNS (TXT e MX). Crie cada um no **Netlify → Domains → felipefurlan.com.br → DNS records** e clique em **Verify** no Resend.
+3. **API Keys → Create API key** (permissão "Sending access").
+4. **Railway → Variables** da API:
+   - `RESEND_API_KEY` = a chave criada
+   - `EMAIL_FROM` = `UniHub <nao-responda@felipefurlan.com.br>` (opcional, este já é o padrão)
+   - `STUDENT_APP_URL` = `https://app.felipefurlan.com.br`
+   - `PANEL_APP_URL` = `https://painel.felipefurlan.com.br`
+
+O link vale 60 minutos e só pode ser usado uma vez. Por segurança, a tela sempre diz "se houver uma conta, enviamos o link", exista ou não o e-mail.
+
+## Regras do plano de negócio (IES conveniada, preço e teto de visitas)
+
+- **Só alunos de IES conveniada se cadastram**: o domínio do e-mail precisa estar na tabela `universities`. O seed cria FACAMP, Unicamp, PUC-Campinas, FATEC Americana, FAM, ESAMC e Mackenzie.
+- **Preço**: plano de R$ 130; o aluno paga R$ 130 menos o subsídio da IES (R$ 10 no seed = R$ 120).
+- **IES**: R$ 3 mil por mês de taxa fixa + R$ 15 por aluno que assina + o subsídio. Entra na "Receita das IES" da visão geral do admin.
+- **Academias**: R$ 8 por visita, pagas só as 10 primeiras visitas do aluno no mês (somando todas as academias). Da 11ª em diante, o check-in funciona, mas aparece como "Não remunerada" no extrato da academia. O teto muda pela variável `MAX_PAID_CHECKINS_PER_MONTH` da API.
+- Os valores do seed ficam no topo de `backend/seed.py` (`PLAN_PRICE`, `PAYOUT_PER_VISIT`, `IES_*`).
+
+**Depois de publicar esta versão, resete a demo** para os dados novos entrarem (o seed só roda com o banco vazio): no Railway, abra o PostgreSQL → **Data** → apague as tabelas (ou crie um banco novo e troque a referência de `DATABASE_URL`) e faça **Redeploy** da API. A migration já cadastra as 7 IES e liga os alunos existentes a elas, então o cadastro funciona mesmo sem resetar; o que só aparece depois do reset é o plano único de R$ 130, o repasse de R$ 8 em todas as academias e os check-ins de demonstração do João perto do teto.
+
 ## Limitações conhecidas do MVP (ok para teste com orientadores)
 
 - **Fotos das academias**: o disco do Railway é efêmero — fotos enviadas pelo admin somem em um redeploy. Para produção real, migrar para Cloudflare R2/S3 (a API não muda).
-- Sem recuperação de senha/verificação de e-mail (você reseta na mão se alguém esquecer: re-rodar seed ou atualizar via banco).
+- Não há código de verificação por e-mail no cadastro: a regra é só o domínio da IES. Quem entra pelo Google tem o e-mail verificado pelo próprio Google.
 - O seed só roda quando o banco está vazio; para resetar a demo, apague os dados do PostgreSQL no Railway e redeploye.
 - CORS já está liberado para `*.felipefurlan.com.br` (configurável pela env `CORS_ORIGIN_REGEX`).

@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.rate_limit import limiter, rate_limit_handler
-from app.routers import admin, auth, checkins, gym_portal, gyms, plans, students, subscriptions
+from app.routers import admin, auth, checkins, gym_portal, gyms, plans, students, subscriptions, universities
 
 app = FastAPI(
     title="UniHub API",
@@ -34,6 +34,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(plans.router)
+app.include_router(universities.router)
 app.include_router(students.router)
 app.include_router(subscriptions.router)
 app.include_router(checkins.router)

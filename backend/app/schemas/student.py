@@ -18,3 +18,5 @@ class StudentProfileOut(StudentOut):
     """Perfil completo: dados do aluno + assinatura vigente."""
 
     subscription: SubscriptionOut | None = None
+    # Subsídio mensal da IES conveniada do aluno (desconta do preço do plano)
+    university_subsidy: float = 0

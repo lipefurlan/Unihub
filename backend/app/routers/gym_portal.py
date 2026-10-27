@@ -46,6 +46,7 @@ def get_my_checkins(
             student_university=c.student.university,
             plan_tier_at_checkin=c.plan_tier_at_checkin,
             payout_amount_recorded=float(c.payout_amount_recorded),
+            is_paid=c.is_paid,
         )
         for c in checkins
     ]
@@ -105,7 +106,7 @@ def export_my_payout_csv(
 
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=";", lineterminator="\n")
-    writer.writerow(["Data/Hora", "Aluno", "Universidade", "Tier do plano", "Valor do repasse (R$)"])
+    writer.writerow(["Data/Hora", "Aluno", "Universidade", "Tier do plano", "Visita remunerada", "Valor do repasse (R$)"])
     for c in checkins:
         writer.writerow(
             [
@@ -113,6 +114,7 @@ def export_my_payout_csv(
                 c["student_name"],
                 c["student_university"],
                 c["plan_tier_at_checkin"],
+                "Sim" if c["is_paid"] else "Não (acima do teto do aluno)",
                 f"{c['payout_amount_recorded']:.2f}".replace(".", ","),
             ]
         )

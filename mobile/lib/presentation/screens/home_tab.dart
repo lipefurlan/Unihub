@@ -169,7 +169,7 @@ class _PlanSection extends ConsumerWidget {
             ),
             const SizedBox(width: UniHubSpacing.x3),
             Text(
-              '${formatBRL(plan.monthlyPrice)}/mês',
+              '${formatBRL(subscription.amount)}/mês',
               style: UniHubStyles.money(size: 14, weight: FontWeight.w500,
                   color: UniHubColors.textSecondary),
             ),

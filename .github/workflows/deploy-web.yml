@@ -3,6 +3,8 @@
 #   NETLIFY_AUTH_TOKEN     - token pessoal do Netlify
 #   NETLIFY_SITE_ID_APP    - Site ID do site do app (app.felipefurlan.com.br)
 #   NETLIFY_SITE_ID_PAINEL - Site ID do site do painel (painel.felipefurlan.com.br)
+# E 1 variável (aba Variables, não é segredo):
+#   GOOGLE_CLIENT_ID       - Client ID do login com Google; vazia = botão escondido
 name: Deploy web no Netlify
 
 on:
@@ -17,6 +19,7 @@ on:
 
 env:
   UNIHUB_API: https://api.felipefurlan.com.br
+  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
 jobs:
   build-and-deploy:
@@ -31,11 +34,11 @@ jobs:
 
       - name: Build do app do estudante
         working-directory: mobile
-        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }}
+        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }} --dart-define=GOOGLE_CLIENT_ID=${{ env.GOOGLE_CLIENT_ID }}
 
       - name: Build do painel
         working-directory: web_admin
-        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }}
+        run: flutter build web --release --dart-define=UNIHUB_API=${{ env.UNIHUB_API }} --dart-define=GOOGLE_CLIENT_ID=${{ env.GOOGLE_CLIENT_ID }}
 
       - name: Redirects de SPA
         run: |
