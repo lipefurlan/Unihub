@@ -14,6 +14,7 @@ class StudentOut(BaseModel):
     status: str
     weekly_goal: int = 3
     home_city: str | None = None
+    course: str | None = None
 
 
 class StudentProfileOut(StudentOut):
@@ -29,6 +30,7 @@ class StudentUpdate(BaseModel):
 
     weekly_goal: int | None = Field(default=None, ge=1, le=7)
     home_city: str | None = Field(default=None, max_length=80)
+    course: str | None = Field(default=None, max_length=80)
 
 
 class WeekStat(BaseModel):
@@ -64,21 +66,3 @@ class AchievementsOut(BaseModel):
     current_streak: int
     best_streak: int
     badges: list[BadgeOut]
-
-
-class ChallengeRow(BaseModel):
-    position: int
-    university_id: int
-    university: str
-    subscribers: int
-    checkins: int
-    score: float  # check-ins do mês por assinante
-
-
-class ChallengeOut(BaseModel):
-    title: str
-    description: str
-    ends_on: str
-    my_university_id: int | None
-    my_checkins: int
-    ranking: list[ChallengeRow]

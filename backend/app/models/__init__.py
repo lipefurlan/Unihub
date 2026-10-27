@@ -7,5 +7,6 @@ from app.models.subscription import Subscription
 from app.models.checkin import CheckIn
 from app.models.payout import Payout
 from app.models.password_reset import PasswordResetToken
+from app.models.challenge import Challenge
 
-__all__ = ["Admin", "University", "Student", "Gym", "Plan", "Subscription", "CheckIn", "Payout", "PasswordResetToken"]
+__all__ = ["Admin", "University", "Student", "Gym", "Plan", "Subscription", "CheckIn", "Payout", "PasswordResetToken", "Challenge"]

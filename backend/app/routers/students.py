@@ -12,14 +12,15 @@ from app.schemas.checkin import CheckInOut
 from app.schemas.gym import GymPublicOut
 from app.schemas.student import (
     AchievementsOut,
-    ChallengeOut,
     StudentOut,
     StudentProfileOut,
     StudentStatsOut,
     StudentUpdate,
 )
+from app.core.courses import normalize_course
+from app.schemas.challenge import StudentChallengeOut
 from app.schemas.subscription import SubscriptionOut
-from app.services import engagement_service
+from app.services import challenge_service, engagement_service
 
 router = APIRouter(prefix="/students/me", tags=["Estudante"])
 
@@ -52,6 +53,8 @@ def update_my_profile(
         student.weekly_goal = data["weekly_goal"]
     if "home_city" in data:
         student.home_city = (data["home_city"] or "").strip() or None
+    if "course" in data:
+        student.course = normalize_course(data["course"])
     db.commit()
     db.refresh(student)
     return _profile(student)
@@ -122,10 +125,10 @@ def get_my_achievements(student: Student = Depends(get_current_student), db: Ses
     return engagement_service.achievements(db, student)
 
 
-@router.get("/challenge", response_model=ChallengeOut)
-def get_challenge(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    """Desafio do mês entre faculdades, com a posição da faculdade do aluno."""
-    return engagement_service.university_challenge(db, student)
+@router.get("/challenges", response_model=list[StudentChallengeOut])
+def get_my_challenges(student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+    """Desafios ativos de que o aluno participa, com o placar e quanto ele já somou."""
+    return challenge_service.student_challenges(db, student)
 
 
 @router.put("/favorites/{gym_id}", status_code=status.HTTP_204_NO_CONTENT)

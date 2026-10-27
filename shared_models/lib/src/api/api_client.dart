@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/admin.dart';
+import '../models/challenge.dart';
 import '../models/checkin.dart';
 import '../models/dashboard.dart';
 import '../models/gym.dart';
@@ -82,6 +83,7 @@ class ApiClient {
     required String name,
     required String email,
     required String password,
+    String? course,
   }) =>
       _run(() async {
         // A universidade vem do domínio do e-mail (IES conveniada)
@@ -89,6 +91,7 @@ class ApiClient {
           'name': name,
           'email': email,
           'password': password,
+          'course': ?course,
         });
         return AuthResult(
           accessToken: res.data['access_token'] as String,
@@ -132,11 +135,17 @@ class ApiClient {
         return Student.fromJson(res.data as Map<String, dynamic>);
       });
 
-  Future<Student> updateMyProfile({int? weeklyGoal, String? homeCity, bool clearHomeCity = false}) =>
+  Future<Student> updateMyProfile({
+    int? weeklyGoal,
+    String? homeCity,
+    bool clearHomeCity = false,
+    String? course,
+  }) =>
       _run(() async {
         final res = await _dio.put('/students/me', data: {
           'weekly_goal': ?weeklyGoal,
           if (homeCity != null || clearHomeCity) 'home_city': homeCity,
+          'course': ?course,
         });
         return Student.fromJson(res.data as Map<String, dynamic>);
       });
@@ -174,9 +183,24 @@ class ApiClient {
         return Achievements.fromJson(res.data as Map<String, dynamic>);
       });
 
-  Future<Challenge> getChallenge() => _run(() async {
-        final res = await _dio.get('/students/me/challenge');
-        return Challenge.fromJson(res.data as Map<String, dynamic>);
+  /// Desafios ativos de que o aluno participa, com o grupo dele e quanto já somou.
+  Future<List<Challenge>> getMyChallenges() => _run(() async {
+        final res = await _dio.get('/students/me/challenges');
+        return (res.data as List).map((c) => Challenge.fromJson(c as Map<String, dynamic>)).toList();
+      });
+
+  /// Faculdades conveniadas (id e nome), para o painel montar desafios.
+  Future<List<({int id, String name})>> getUniversities() => _run(() async {
+        final res = await _dio.get('/universities');
+        return [
+          for (final u in res.data as List) (id: u['id'] as int, name: u['name'] as String),
+        ];
+      });
+
+  /// Cursos aceitos no cadastro (agrupam os desafios entre cursos).
+  Future<List<String>> getCourses() => _run(() async {
+        final res = await _dio.get('/universities/courses');
+        return (res.data as List).cast<String>();
       });
 
   Future<CheckIn> rateCheckin(int checkinId, int stars) => _run(() async {
@@ -368,5 +392,36 @@ class ApiClient {
         return (res.data as List)
             .map((s) => AdminStudentRow.fromJson(s as Map<String, dynamic>))
             .toList();
+      });
+
+  // ------------------------------------------------ desafios (painel)
+  // [asUniversity]: a faculdade logada vê os dela; senão, a operação vê todos.
+
+  String _challengesPath(bool asUniversity) => asUniversity ? '/ies/me/challenges' : '/admin/challenges';
+
+  Future<List<Challenge>> getChallenges({bool asUniversity = false}) => _run(() async {
+        final res = await _dio.get(_challengesPath(asUniversity));
+        return (res.data as List).map((c) => Challenge.fromJson(c as Map<String, dynamic>)).toList();
+      });
+
+  Future<Challenge> getChallengeDetail(int id, {bool asUniversity = false}) => _run(() async {
+        final res = await _dio.get('${_challengesPath(asUniversity)}/$id');
+        return Challenge.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<Challenge> createChallenge(Map<String, dynamic> data, {bool asUniversity = false}) =>
+      _run(() async {
+        final res = await _dio.post(_challengesPath(asUniversity), data: data);
+        return Challenge.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<void> deleteChallenge(int id, {bool asUniversity = false}) => _run(() async {
+        await _dio.delete('${_challengesPath(asUniversity)}/$id');
+      });
+
+  /// Placar público do desafio (sem login): TV da faculdade, grupo da turma.
+  Future<Challenge> getScoreboard(String token) => _run(() async {
+        final res = await _dio.get('/public/scoreboard/$token');
+        return Challenge.fromJson(res.data as Map<String, dynamic>);
       });
 }

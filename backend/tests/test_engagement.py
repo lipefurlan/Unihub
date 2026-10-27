@@ -1,4 +1,4 @@
-"""Avaliação da visita, conquistas, academias em alta e desafio entre faculdades.
+"""Avaliação da visita, conquistas e academias em alta.
 
 Rodar a partir de backend/:  python -m pytest tests
 """
@@ -77,23 +77,3 @@ def test_trending_gyms_rank_recent_visits():
     trending = client.get("/gyms/trending").json()
     assert trending[0]["recent_checkins"] == 1
     assert trending[0]["gym"]["name"] == "Campus Fit"
-
-
-def test_challenge_ranks_universities_by_visits_per_subscriber():
-    joao = _headers()
-    client.post("/subscriptions", json={"plan_id": 1}, headers=joao)
-    token = client.post("/auth/register/student", json={
-        "name": "Aluna", "email": "aluna@facamp.edu.br", "password": "senha123"}).json()["access_token"]
-    aluna = {"Authorization": f"Bearer {token}"}
-    client.post("/subscriptions", json={"plan_id": 1}, headers=aluna)
-
-    month_day = datetime.now().replace(day=1, hour=10)
-    _checkin_at(month_day)
-    _checkin_at(month_day + timedelta(hours=5))
-    _checkin_at(month_day, email="aluna@facamp.edu.br")
-
-    body = client.get("/students/me/challenge", headers=joao).json()
-    assert [r["university"] for r in body["ranking"]] == ["Unicamp", "FACAMP"]
-    assert body["ranking"][0]["score"] == 2.0
-    assert body["my_checkins"] == 2
-    assert body["my_university_id"] == body["ranking"][0]["university_id"]
