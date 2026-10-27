@@ -10,10 +10,12 @@ Para apresentar o UniHub aos professores. Use o app num celular (ou a janela do 
 
 1. No app, toque em **Entrar como aluno de demonstração** (João Silva, Unicamp).
 2. **Início**: plano de R$ 120 (R$ 130 menos R$ 10 de subsídio da Unicamp), meta de 2 treinos por semana com a sequência de semanas e o resumo do mês. Abaixo, as academias favoritas.
-3. **Explorar**: o João é de Americana. O filtro de cidade mostra as academias de lá para quando ele vai para casa. As distâncias usam a localização real, ou o campus se o navegador não liberar.
+3. **Explorar**: carrosséis "Perto de você" e "Bombando nesta semana", com nota e distância. No topo dá para trocar a localização (atual, campus ou uma cidade). O João é de Americana. O filtro de cidade mostra as academias de lá para quando ele vai para casa. As distâncias usam a localização real, ou o campus se o navegador não liberar.
 4. Abra a **Academia Campus Fit**: horário mais tranquilo (barras laranja), coração para favoritar e **Fazer check-in aqui**.
 5. Tela de sucesso: QR e código de 6 letras. Anote o código.
-6. Ponto de negócio: o João já tinha 9 visitas pagas no mês. Esta é a 10ª e última que gera repasse para a academia.
+6. Volte ao **Início**: o card "Como foi o treino?" pede a avaliação (estrelas). Abaixo, o **desafio do mês** mostra a Unicamp no ranking entre faculdades.
+7. **Perfil**: total de check-ins, a sequência de semanas e as conquistas.
+8. Ponto de negócio: o João já tinha 9 visitas pagas no mês. Esta é a 10ª e última que gera repasse para a academia.
 
 ## 2. A academia (1 min)
 

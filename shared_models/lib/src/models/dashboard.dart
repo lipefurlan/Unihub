@@ -26,6 +26,8 @@ class GymDashboard {
   final double prevMonthRevenue;
   final List<DailyCount> checkinsByDay;
   final List<HourRangeCount> checkinsByHourRange;
+  final double? ratingAvg; // nota média dos alunos (1 a 5)
+  final int ratingCount;
 
   const GymDashboard({
     required this.monthCheckins,
@@ -35,6 +37,8 @@ class GymDashboard {
     required this.prevMonthRevenue,
     required this.checkinsByDay,
     required this.checkinsByHourRange,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   factory GymDashboard.fromJson(Map<String, dynamic> json) => GymDashboard(
@@ -49,6 +53,8 @@ class GymDashboard {
         checkinsByHourRange: (json['checkins_by_hour_range'] as List)
             .map((h) => HourRangeCount.fromJson(h as Map<String, dynamic>))
             .toList(),
+        ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
+        ratingCount: json['rating_count'] as int? ?? 0,
       );
 }
 

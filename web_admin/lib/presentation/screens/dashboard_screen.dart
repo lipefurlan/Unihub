@@ -62,7 +62,7 @@ class DashboardScreen extends ConsumerWidget {
                     detail: 'atendidos no mês',
                   ),
                   MetricBlock(
-                    label: 'Receita estimada de repasse',
+                    label: 'Repasse estimado',
                     value: formatBRL(d.estimatedRevenue),
                     detail: revenueDelta,
                     highlight: true,
@@ -71,6 +71,15 @@ class DashboardScreen extends ConsumerWidget {
                     label: 'Mês anterior',
                     value: formatBRL(d.prevMonthRevenue),
                     detail: '${d.prevMonthCheckins} check-ins',
+                  ),
+                  MetricBlock(
+                    label: 'Nota dos alunos',
+                    value: d.ratingAvg == null
+                        ? '—'
+                        : '${d.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} ★',
+                    detail: d.ratingCount == 0
+                        ? 'sem avaliações ainda'
+                        : '${d.ratingCount} avaliações no app',
                   ),
                 ],
               ),
