@@ -289,7 +289,10 @@ def main() -> None:
                 step = (now - timedelta(hours=1) - month_start) / 9
                 for k in range(9):
                     # Alterna entre 3 academias para respeitar o anti-fraude de 3h
-                    planned.append((student, pool[k % min(3, len(pool))], month_start + step * k))
+                    # Horário realista no dia (nada de treino às 2h da manhã)
+                    ts = (month_start + step * k).replace(hour=pick_hour(), minute=random.randint(0, 59))
+                    ts = min(ts, now - timedelta(hours=4))
+                    planned.append((student, pool[k % min(3, len(pool))], ts))
                 continue
 
             n_checkins = random.randint(10, 17)

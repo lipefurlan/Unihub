@@ -18,11 +18,16 @@ class ExploreTab extends ConsumerStatefulWidget {
 class _ExploreTabState extends ConsumerState<ExploreTab> {
   String _search = '';
   String? _modality;
+  String? _city;
+  bool _onlyFavorites = false;
 
   @override
   Widget build(BuildContext context) {
     final student = ref.watch(authProvider).value;
     final gymsAsync = ref.watch(gymsProvider);
+    final location = ref.watch(userLocationProvider).value ?? UserLocation.current;
+    final favoriteIds = {...?ref.watch(favoritesProvider).value?.map((g) => g.id)};
+    final homeCity = student?.homeCity;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Explorar')),
@@ -31,6 +36,9 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
         error: (e, _) => EmptyState(icon: LucideIcons.wifiOff, message: '$e'),
         data: (gyms) {
           final modalities = gyms.expand((g) => g.modalities).toSet().toList()..sort();
+          // Cidade natal primeiro: o aluno acha academia quando vai para casa
+          final cities = gyms.map((g) => g.city).where((c) => c.isNotEmpty).toSet().toList()
+            ..sort((a, b) => a == homeCity ? -1 : (b == homeCity ? 1 : a.compareTo(b)));
 
           var filtered = sortByDistance(gyms);
           if (_search.isNotEmpty) {
@@ -40,6 +48,12 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
           }
           if (_modality != null) {
             filtered = filtered.where((g) => g.modalities.contains(_modality)).toList();
+          }
+          if (_city != null) {
+            filtered = filtered.where((g) => g.city == _city).toList();
+          }
+          if (_onlyFavorites) {
+            filtered = filtered.where((g) => favoriteIds.contains(g.id)).toList();
           }
 
           return Column(
@@ -53,6 +67,31 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
                     prefixIcon: Icon(LucideIcons.search, size: 18),
                   ),
                   onChanged: (v) => setState(() => _search = v),
+                ),
+              ),
+              SizedBox(
+                height: 48,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                      UniHubSpacing.x6, UniHubSpacing.x3, UniHubSpacing.x6, 0),
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _FilterChip(
+                      label: 'Favoritas',
+                      icon: LucideIcons.heart,
+                      selected: _onlyFavorites,
+                      onTap: () => setState(() => _onlyFavorites = !_onlyFavorites),
+                    ),
+                    for (final city in cities) ...[
+                      const SizedBox(width: UniHubSpacing.x2),
+                      _FilterChip(
+                        label: city,
+                        icon: city == homeCity ? LucideIcons.house : LucideIcons.mapPin,
+                        selected: _city == city,
+                        onTap: () => setState(() => _city = _city == city ? null : city),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               SizedBox(
@@ -72,6 +111,27 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
                       onTap: () => setState(() => _modality = selected ? null : m),
                     );
                   },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(UniHubSpacing.x6, 0, UniHubSpacing.x6, UniHubSpacing.x2),
+                child: Row(
+                  children: [
+                    Icon(
+                      location.isReal ? LucideIcons.locateFixed : LucideIcons.school,
+                      size: 14,
+                      color: UniHubColors.textSecondary,
+                    ),
+                    const SizedBox(width: UniHubSpacing.x2),
+                    Expanded(
+                      child: Text(
+                        location.isReal
+                            ? 'Distâncias a partir de onde você está'
+                            : 'Distâncias a partir do campus (localização não liberada)',
+                        style: const TextStyle(fontSize: 12, color: UniHubColors.textSecondary),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Divider(),
@@ -106,9 +166,10 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
 
 /// Chip de filtro minimalista: contorno fino, laranja apenas quando ativo.
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({required this.label, required this.selected, required this.onTap, this.icon});
 
   final String label;
+  final IconData? icon;
   final bool selected;
   final VoidCallback onTap;
 
@@ -126,13 +187,22 @@ class _FilterChip extends StatelessWidget {
             width: selected ? 1.5 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? UniHubColors.accent : UniHubColors.textSecondary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 13, color: selected ? UniHubColors.accent : UniHubColors.textSecondary),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? UniHubColors.accent : UniHubColors.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );

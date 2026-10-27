@@ -17,6 +17,7 @@ class CheckinTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final student = ref.watch(authProvider).value;
     final gymsAsync = ref.watch(gymsProvider);
+    ref.watch(userLocationProvider); // redesenha quando a localização chega
 
     return Scaffold(
       appBar: AppBar(title: const Text('Check-in')),

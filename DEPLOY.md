@@ -96,6 +96,16 @@ O link vale 60 minutos e só pode ser usado uma vez. Por segurança, a tela semp
 
 **Depois de publicar esta versão, resete a demo** para os dados novos entrarem (o seed só roda com o banco vazio): no Railway, abra o PostgreSQL → **Data** → apague as tabelas (ou crie um banco novo e troque a referência de `DATABASE_URL`) e faça **Redeploy** da API. A migration já cadastra as 7 IES e liga os alunos existentes a elas, então o cadastro funciona mesmo sem resetar; o que só aparece depois do reset é o plano único de R$ 130, o repasse de R$ 8 em todas as academias e os check-ins de demonstração do João perto do teto.
 
+## Fase 2 e 3: portal da faculdade, checkout, QR de entrada e app do aluno
+
+Depois de publicar esta versão, **resete a demo de novo** (mesmo passo acima: apague as tabelas no PostgreSQL do Railway e faça Redeploy). As migrations criam as colunas novas sozinhas, mas o login da FACAMP, a meta e a cidade natal do João, as favoritas e os horários dos check-ins só vêm do seed.
+
+- **Login da faculdade**: `programa@facamp.edu.br` / `facamp123` no painel (botão "Faculdade" na tela de login).
+- **Fuso horário**: o Dockerfile agora fixa `TZ=America/Sao_Paulo`, então check-ins, semanas da meta e virada do mês seguem o horário de Brasília.
+- **Localização**: o app pede a localização ao navegador. Só funciona em HTTPS (o Netlify já é). Se o aluno negar, as distâncias usam o campus.
+- **Checkout**: é simulado. Nenhum dado de cartão sai do navegador e nada é cobrado.
+- Nada novo para configurar no Railway ou no Netlify.
+
 ## Limitações conhecidas do MVP (ok para teste com orientadores)
 
 - **Fotos das academias**: o disco do Railway é efêmero — fotos enviadas pelo admin somem em um redeploy. Para produção real, migrar para Cloudflare R2/S3 (a API não muda).

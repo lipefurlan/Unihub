@@ -26,6 +26,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  static final _demoStyle = OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+  );
+
   // Contas de demonstração do seed (atalhos para a banca)
   void _loginAsDemo(String email, String password) {
     _emailController.text = email;
@@ -74,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: UniHubSpacing.x2),
                   const Text(
-                    'Acesso para academias parceiras e para a operação UniHub.',
+                    'Acesso para academias parceiras, faculdades conveniadas e operação UniHub.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -142,6 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
+                          style: _demoStyle,
                           onPressed: _loading
                               ? null
                               : () => _loginAsDemo(
@@ -154,13 +159,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(width: UniHubSpacing.x3),
                       Expanded(
                         child: OutlinedButton(
+                          style: _demoStyle,
                           onPressed: _loading
                               ? null
                               : () => _loginAsDemo(
                                   'admin@unihub.com.br',
                                   'admin123',
                                 ),
-                          child: const Text('Operação UniHub'),
+                          child: const Text('Operação'),
+                        ),
+                      ),
+                      const SizedBox(width: UniHubSpacing.x3),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: _demoStyle,
+                          onPressed: _loading
+                              ? null
+                              : () => _loginAsDemo(
+                                  'programa@facamp.edu.br',
+                                  'facamp123',
+                                ),
+                          child: const Text('Faculdade'),
                         ),
                       ),
                     ],

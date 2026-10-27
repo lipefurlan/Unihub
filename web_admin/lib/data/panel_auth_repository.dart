@@ -2,21 +2,35 @@ import 'package:shared_models/shared_models.dart';
 
 import 'token_storage.dart';
 
-/// Sessão do painel: academia (role gym) ou operação UniHub (role admin).
+/// Sessão do painel: academia (gym), operação UniHub (admin) ou faculdade (ies).
 class PanelSession {
-  final String role; // gym | admin
+  final String role; // gym | admin | ies
   final Gym? gym;
   final AdminProfile? admin;
+  final UniversityProfile? university;
 
-  const PanelSession.gym(Gym this.gym) : role = 'gym', admin = null;
+  const PanelSession.gym(Gym this.gym) : role = 'gym', admin = null, university = null;
 
   const PanelSession.admin(AdminProfile this.admin)
     : role = 'admin',
-      gym = null;
+      gym = null,
+      university = null;
+
+  const PanelSession.university(UniversityProfile this.university)
+    : role = 'ies',
+      gym = null,
+      admin = null;
 
   bool get isAdmin => role == 'admin';
+  bool get isUniversity => role == 'ies';
 
-  String get displayName => isAdmin ? admin!.name : gym!.name;
+  /// Prefixo das rotas de cada área (cada role só navega na sua)
+  String get areaPrefix => isAdmin ? '/admin' : (isUniversity ? '/ies' : '');
+
+  String get home => isAdmin ? '/admin/overview' : (isUniversity ? '/ies/overview' : '/dashboard');
+
+  String get displayName =>
+      isAdmin ? admin!.name : (isUniversity ? university!.name : gym!.name);
 }
 
 class PanelAuthRepository {
@@ -52,6 +66,9 @@ class PanelAuthRepository {
   Future<PanelSession> _fetchProfile(String role) async {
     if (role == 'admin') {
       return PanelSession.admin(await _api.getAdminMe());
+    }
+    if (role == 'ies') {
+      return PanelSession.university(await _api.getUniversityMe());
     }
     return PanelSession.gym(await _api.getMyGym());
   }

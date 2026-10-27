@@ -104,3 +104,13 @@ final adminPayoutsProvider =
 final adminStudentsProvider = FutureProvider<List<AdminStudentRow>>(
   (ref) => ref.watch(apiClientProvider).getAdminStudents(),
 );
+
+// ------------------------------------------------------ dados (faculdade)
+
+final iesOverviewProvider = FutureProvider<UniversityOverview>(
+  (ref) => ref.watch(apiClientProvider).getUniversityOverview(),
+);
+
+final iesStudentsProvider = FutureProvider<List<UniversityStudentRow>>(
+  (ref) => ref.watch(apiClientProvider).getUniversityStudents(),
+);

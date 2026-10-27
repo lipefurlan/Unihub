@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../data/auth_repository.dart';
+import '../data/location_service.dart';
+import '../domain/access_rules.dart';
 import '../data/token_storage.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
@@ -78,6 +80,29 @@ final plansProvider = FutureProvider<List<Plan>>(
 
 final gymsProvider = FutureProvider<List<Gym>>(
   (ref) => ref.watch(apiClientProvider).getGyms(),
+);
+
+/// Localização do aluno (real se permitida, senão o campus).
+final userLocationProvider = FutureProvider<UserLocation>((ref) async {
+  final location = await fetchUserLocation();
+  UserLocation.current = location;
+  return location;
+});
+
+final gymCitiesProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(apiClientProvider).getGymCities(),
+);
+
+final favoritesProvider = FutureProvider<List<Gym>>(
+  (ref) => ref.watch(apiClientProvider).getMyFavorites(),
+);
+
+final gymBusyHoursProvider = FutureProvider.family<GymBusyHours, int>(
+  (ref, id) => ref.watch(apiClientProvider).getGymBusyHours(id),
+);
+
+final myStatsProvider = FutureProvider<StudentStats>(
+  (ref) => ref.watch(apiClientProvider).getMyStats(),
 );
 
 final gymDetailProvider = FutureProvider.family<Gym, int>(
