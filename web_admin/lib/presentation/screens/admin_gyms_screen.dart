@@ -6,6 +6,7 @@ import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
 import '../widgets/common.dart';
+import '../widgets/temporary_password.dart';
 
 /// Gestão das academias parceiras (clientes da plataforma):
 /// credenciamento, edição das cláusulas comerciais, foto e ativação.
@@ -176,6 +177,12 @@ class _AdminGymsScreenState extends ConsumerState<AdminGymsScreen> {
                 onEdit: () => _openForm(gym: gym),
                 onPhoto: () => _uploadPhoto(gym),
                 onToggleActive: () => _toggleActive(gym),
+                onTemporaryPassword: () => generateTemporaryPassword(
+                  context,
+                  ref,
+                  accountName: gym.name,
+                  gymId: gym.id,
+                ),
               ),
             ],
           ],
@@ -192,6 +199,7 @@ class _GymRow extends StatelessWidget {
     required this.onEdit,
     required this.onPhoto,
     required this.onToggleActive,
+    required this.onTemporaryPassword,
   });
 
   final AdminGym gym;
@@ -199,6 +207,7 @@ class _GymRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onPhoto;
   final VoidCallback onToggleActive;
+  final VoidCallback onTemporaryPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -302,6 +311,15 @@ class _GymRow extends StatelessWidget {
             tooltip: 'Editar',
             icon: const Icon(
               LucideIcons.pencil,
+              size: 18,
+              color: UniHubColors.textSecondary,
+            ),
+          ),
+          IconButton(
+            onPressed: busy ? null : onTemporaryPassword,
+            tooltip: 'Gerar senha temporária',
+            icon: const Icon(
+              LucideIcons.keyRound,
               size: 18,
               color: UniHubColors.textSecondary,
             ),

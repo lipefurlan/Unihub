@@ -8,7 +8,18 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.rate_limit import limiter, rate_limit_handler
-from app.routers import admin, auth, checkins, gym_portal, gyms, plans, students, subscriptions, universities
+from app.routers import (
+    admin,
+    auth,
+    checkins,
+    gym_portal,
+    gyms,
+    ies_portal,
+    plans,
+    students,
+    subscriptions,
+    universities,
+)
 
 app = FastAPI(
     title="UniHub API",
@@ -42,6 +53,7 @@ app.include_router(checkins.router)
 app.include_router(gym_portal.router)
 app.include_router(gyms.router)
 app.include_router(admin.router)
+app.include_router(ies_portal.router)
 
 # Fotos das academias enviadas pelo admin (POC: disco local; produção: S3/R2)
 _uploads_dir = Path(__file__).resolve().parents[1] / "uploads"

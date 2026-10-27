@@ -6,6 +6,7 @@ import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
 import '../widgets/common.dart';
+import 'home_tab.dart' show showWeeklyGoalPicker;
 
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
@@ -60,6 +61,20 @@ class ProfileTab extends ConsumerWidget {
             label: 'Gerenciar plano',
             subtitle: student.subscription?.plan.name ?? 'Sem plano ativo',
             onTap: () => context.push('/plans'),
+          ),
+          const Divider(),
+          _ProfileAction(
+            icon: LucideIcons.target,
+            label: 'Meta semanal',
+            subtitle: '${student.weeklyGoal} treinos',
+            onTap: () => showWeeklyGoalPicker(context, ref, student.weeklyGoal),
+          ),
+          const Divider(),
+          _ProfileAction(
+            icon: LucideIcons.house,
+            label: 'Cidade natal',
+            subtitle: student.homeCity ?? 'Escolher',
+            onTap: () => _pickHomeCity(context, ref, student.homeCity),
           ),
           const Divider(),
           _ProfileAction(
@@ -126,6 +141,60 @@ class ProfileTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+/// Cidade natal: o Explorar mostra as academias de lá primeiro (feriados e férias).
+Future<void> _pickHomeCity(BuildContext context, WidgetRef ref, String? current) async {
+  final List<String> cities;
+  try {
+    cities = await ref.read(gymCitiesProvider.future);
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
+    return;
+  }
+  if (!context.mounted) return;
+  final picked = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: UniHubColors.background,
+    builder: (sheetContext) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(UniHubSpacing.x6, UniHubSpacing.x6, UniHubSpacing.x6, UniHubSpacing.x2),
+            child: Text(
+              'Onde você passa as férias?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),
+            child: Text(
+              'Cidades com academias parceiras',
+              style: TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+            ),
+          ),
+          for (final city in cities)
+            ListTile(
+              title: Text(city),
+              trailing: city == current
+                  ? const Icon(LucideIcons.check, color: UniHubColors.accent, size: 18)
+                  : null,
+              onTap: () => Navigator.of(sheetContext).pop(city),
+            ),
+          const SizedBox(height: UniHubSpacing.x4),
+        ],
+      ),
+    ),
+  );
+  if (picked == null || picked == current) return;
+  try {
+    await ref.read(apiClientProvider).updateMyProfile(homeCity: picked);
+    await ref.read(authProvider.notifier).refreshProfile();
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
   }
 }
 

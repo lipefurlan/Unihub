@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.database import get_db
 from app.core.security import get_current_gym
 from app.models import CheckIn, Gym, Payout
-from app.schemas.checkin import GymCheckInOut
+from app.schemas.checkin import CheckInValidate, CheckInValidatedOut, GymCheckInOut
 from app.schemas.gym import GymOwnerOut
 from app.schemas.payout import GymDashboardOut, GymStudentRow, PayoutDetailOut, PayoutOut
-from app.services import payout_service
+from app.services import checkin_service, payout_service
 
 # Importante: este router precisa ser registrado ANTES de /gyms/{gym_id}
 # para que "/gyms/me" não seja interpretado como um id.
@@ -47,9 +47,20 @@ def get_my_checkins(
             plan_tier_at_checkin=c.plan_tier_at_checkin,
             payout_amount_recorded=float(c.payout_amount_recorded),
             is_paid=c.is_paid,
+            validated_at=c.validated_at,
         )
         for c in checkins
     ]
+
+
+@router.post("/checkins/validate", response_model=CheckInValidatedOut)
+def validate_entry(
+    payload: CheckInValidate,
+    gym: Gym = Depends(get_current_gym),
+    db: Session = Depends(get_db),
+):
+    """Recepção confirma a entrada lendo o QR ou digitando o código do aluno."""
+    return checkin_service.validate_entry(db, gym, payload.code)
 
 
 @router.get("/students", response_model=list[GymStudentRow])
