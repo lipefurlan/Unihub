@@ -18,7 +18,7 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    role: str  # student | gym
+    role: str  # student | gym | admin | ies
 
 
 class GoogleLoginRequest(BaseModel):

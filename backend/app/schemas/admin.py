@@ -102,3 +102,9 @@ class PlatformOverview(BaseModel):
     active_gyms: int
     active_universities: int
     top_gyms: list[TopGym]
+
+
+class TemporaryPasswordOut(BaseModel):
+    """Senha temporária gerada pelo admin (suporte manual); mostrada uma vez."""
+
+    temporary_password: str
