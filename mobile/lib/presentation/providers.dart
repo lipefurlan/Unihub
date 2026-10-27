@@ -17,6 +17,9 @@ class AuthNotifier extends AsyncNotifier<Student?> {
   @override
   Future<Student?> build() async {
     final repo = ref.watch(authRepositoryProvider);
+    ref.read(apiClientProvider).onUnauthorized = () {
+      if (state.value != null) logout();
+    };
     final token = await repo.restoreToken();
     if (token == null) return null;
     try {
@@ -34,18 +37,22 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     state = AsyncData(profile);
   }
 
+  Future<void> loginWithGoogle(String credential) async {
+    final repo = ref.read(authRepositoryProvider);
+    final profile = await repo.loginWithGoogle(credential);
+    state = AsyncData(profile);
+  }
+
   Future<void> register({
     required String name,
     required String email,
     required String password,
-    required String university,
   }) async {
     final repo = ref.read(authRepositoryProvider);
     final profile = await repo.register(
       name: name,
       email: email,
       password: password,
-      university: university,
     );
     state = AsyncData(profile);
   }

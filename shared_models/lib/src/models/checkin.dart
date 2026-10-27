@@ -30,6 +30,7 @@ class GymCheckIn {
   final String studentUniversity;
   final int planTierAtCheckin;
   final double payoutAmountRecorded;
+  final bool isPaid; // false = acima do teto mensal do aluno, sem repasse
 
   const GymCheckIn({
     required this.id,
@@ -38,6 +39,7 @@ class GymCheckIn {
     required this.studentUniversity,
     required this.planTierAtCheckin,
     required this.payoutAmountRecorded,
+    this.isPaid = true,
   });
 
   factory GymCheckIn.fromJson(Map<String, dynamic> json) => GymCheckIn(
@@ -47,5 +49,6 @@ class GymCheckIn {
         studentUniversity: json['student_university'] as String,
         planTierAtCheckin: json['plan_tier_at_checkin'] as int,
         payoutAmountRecorded: (json['payout_amount_recorded'] as num).toDouble(),
+        isPaid: json['is_paid'] as bool? ?? true,
       );
 }

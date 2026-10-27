@@ -20,6 +20,9 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
   @override
   Future<PanelSession?> build() async {
     final repo = ref.watch(authRepositoryProvider);
+    ref.read(apiClientProvider).onUnauthorized = () {
+      if (state.value != null) logout();
+    };
     try {
       return await repo.restore();
     } on ApiException {
@@ -33,6 +36,13 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
     final session = await ref
         .read(authRepositoryProvider)
         .login(email, password);
+    state = AsyncData(session);
+  }
+
+  Future<void> loginWithGoogle(String credential) async {
+    final session = await ref
+        .read(authRepositoryProvider)
+        .loginWithGoogle(credential);
     state = AsyncData(session);
   }
 

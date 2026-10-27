@@ -16,8 +16,13 @@ class AuthRepository {
     return token;
   }
 
-  Future<Student> login(String email, String password) async {
-    final result = await _api.login(email, password);
+  Future<Student> login(String email, String password) async =>
+      _startSession(await _api.login(email, password));
+
+  Future<Student> loginWithGoogle(String credential) async =>
+      _startSession(await _api.loginWithGoogle(credential));
+
+  Future<Student> _startSession(AuthResult result) async {
     if (result.role != 'student') {
       throw const ApiException('Esta conta é de academia. Use o painel web da academia.');
     }
@@ -30,13 +35,11 @@ class AuthRepository {
     required String name,
     required String email,
     required String password,
-    required String university,
   }) async {
     final result = await _api.registerStudent(
       name: name,
       email: email,
       password: password,
-      university: university,
     );
     _api.token = result.accessToken;
     await _storage.write(result.accessToken);

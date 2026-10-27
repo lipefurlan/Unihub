@@ -4,13 +4,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_student
 from app.models import Student
-from app.schemas.checkin import CheckInCreate, CheckInOut
+from app.schemas.checkin import CheckInCreate, CheckInCreatedOut
 from app.services import checkin_service
 
 router = APIRouter(prefix="/checkins", tags=["Check-ins"])
 
 
-@router.post("", response_model=CheckInOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CheckInCreatedOut, status_code=status.HTTP_201_CREATED)
 def create_checkin(
     payload: CheckInCreate,
     student: Student = Depends(get_current_student),
