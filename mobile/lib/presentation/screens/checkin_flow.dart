@@ -59,7 +59,7 @@ Future<void> startCheckinFlow(BuildContext context, WidgetRef ref, Gym gym) asyn
     ref.invalidate(myCheckinsProvider);
     ref.invalidate(myStatsProvider);
     ref.invalidate(achievementsProvider);
-    ref.invalidate(challengeProvider);
+    ref.invalidate(myChallengesProvider);
     ref.invalidate(trendingGymsProvider);
     if (context.mounted) context.push('/checkin-success', extra: checkin);
   } on ApiException catch (e) {

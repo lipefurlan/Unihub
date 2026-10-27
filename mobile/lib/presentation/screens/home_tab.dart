@@ -32,7 +32,7 @@ class HomeTab extends ConsumerWidget {
           ref.invalidate(myCheckinsProvider);
           ref.invalidate(myStatsProvider);
           ref.invalidate(favoritesProvider);
-          ref.invalidate(challengeProvider);
+          ref.invalidate(myChallengesProvider);
           ref.invalidate(gymsProvider);
           await ref.read(authProvider.notifier).refreshProfile();
         },

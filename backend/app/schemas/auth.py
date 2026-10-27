@@ -8,6 +8,8 @@ class StudentRegister(BaseModel):
     # A universidade vem do domínio do e-mail (IES conveniada); o campo
     # continua aceito para não quebrar clientes antigos, mas é ignorado.
     university: str | None = None
+    # Opcional: entra nos desafios entre cursos da faculdade
+    course: str | None = Field(default=None, max_length=80)
 
 
 class LoginRequest(BaseModel):

@@ -35,7 +35,7 @@ python -m venv .venv
 # Create the database (SQLite by default; set DATABASE_URL for PostgreSQL)
 .\.venv\Scripts\alembic upgrade head
 
-# Load demo data (7 partner universities, 1 plan, 10 gyms, 19 students, ~250 check-ins)
+# Load demo data (7 partner universities, 1 plan, 10 gyms, 24 students, ~300 check-ins, 3 challenges)
 .\.venv\Scripts\python seed.py
 
 # Start the API at http://127.0.0.1:8000
@@ -75,7 +75,7 @@ flutter run -d chrome
 | UniHub operations (admin) | `admin@unihub.com.br` | `admin123` |
 | University portal (FACAMP) | `programa@facamp.edu.br` | `facamp123` |
 
-All 19 students use the password `senha123` and all 10 gyms use `academia123` (emails are printed by `seed.py`).
+All 24 students use the password `senha123` and all 10 gyms use `academia123` (emails are printed by `seed.py`).
 
 The login screens have one-click buttons for these demo accounts.
 
@@ -84,8 +84,9 @@ The login screens have one-click buttons for these demo accounts.
 2. Open a gym → favourite it and see its quietest hours. Check in → the success screen shows a QR and a 6-character entry code.
 3. Log into the panel as Campus Fit → **Validar entrada**, type the code → entry confirmed.
 4. Log in as the university (FACAMP) → adoption, usage and the monthly invoice, plus the student list.
-5. Log in as the admin → monthly result (students + universities − payouts) and a "temporary password" button for students and gyms.
-6. Sign up a new student with a FACAMP email → choosing the plan opens the simulated checkout (PIX or card).
+5. In the university portal, open **Desafios** → the FACAMP course cup with the ranking, weekly evolution and the public scoreboard for a TV.
+6. Log in as the admin → monthly result (students + universities − payouts) and a "temporary password" button for students and gyms.
+7. Sign up a new student with a FACAMP email → choosing the plan opens the simulated checkout (PIX or card).
 
 Google sign-in and "forgot password" emails need a one-time setup (Google Cloud client ID and a Resend API key); see [`DEPLOY.md`](./DEPLOY.md). Without it, the Google button is hidden and the reset link is printed in the API log.
 
@@ -108,7 +109,8 @@ cd backend
 - **Anti-fraud:** at most one check-in per student per gym every 3 hours (configurable).
 - **Commercial terms:** payout amount and minimum tier are set by the admin during onboarding; the gym can see them but not change them.
 - **Entry code:** each check-in gets a 6-character code (shown as a QR in the app) that the gym's reception validates in the panel; it only works at that gym and for 3 hours.
-- **Ratings and engagement:** students rate visits (1–5 stars, shown as the gym's average); achievements and the monthly university challenge (check-ins per subscriber) are computed on the fly in `engagement_service.py`.
+- **Ratings and engagement:** students rate visits (1–5 stars, shown as the gym's average); achievements are computed on the fly in `engagement_service.py`.
+- **Challenges:** the admin creates university-vs-university challenges (or course-vs-course for one university); a university creates course challenges for its own students. Teams are the active subscribers of each university or course, and the score is either check-ins per subscriber or the share of the team with at least one check-in per elapsed week. Rankings are computed on the fly from check-ins (`challenge_service.py`), and each challenge has a public scoreboard link (`/#/placar/<token>` in the panel) with no login.
 - **Pause:** a paused plan blocks check-ins until the student resumes it.
 - **Weekly goal:** weeks run Monday to Sunday; the streak counts consecutive weeks with the goal met (the current week counts once it is met).
 - **University portal:** a university sees how many of its students signed up, subscribe and train, plus its invoice. It never sees locations or times.

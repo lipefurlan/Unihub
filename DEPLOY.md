@@ -106,6 +106,13 @@ Depois de publicar esta versão, **resete a demo de novo** (mesmo passo acima: a
 - **Checkout**: é simulado. Nenhum dado de cartão sai do navegador e nada é cobrado.
 - Nada novo para configurar no Railway ou no Netlify.
 
+## Desafios entre faculdades e cursos
+
+Depois de publicar esta versão, **resete a demo de novo** (mesmo passo acima). A migration cria a tabela de desafios e o campo de curso, mas os cursos dos alunos, os 5 alunos novos da FACAMP e os 3 desafios de exemplo só vêm do seed.
+
+- **Placar público**: o link é `https://painel.felipefurlan.com.br/#/placar/<código>`. O painel copia o link pronto no botão **Copiar link**. Não pede login, então serve para a TV do campus ou para o grupo da turma.
+- Nada novo para configurar no Railway ou no Netlify.
+
 ## Limitações conhecidas do MVP (ok para teste com orientadores)
 
 - **Fotos das academias**: o disco do Railway é efêmero — fotos enviadas pelo admin somem em um redeploy. Para produção real, migrar para Cloudflare R2/S3 (a API não muda).
