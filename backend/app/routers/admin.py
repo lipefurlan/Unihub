@@ -1,14 +1,15 @@
+import secrets
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path as FilePath
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.security import get_current_admin, hash_password
-from app.models import Admin, CheckIn, Gym, Payout, Student, Subscription
+from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University, UniversityRosterEntry
 from app.schemas.admin import (
     AdminGymCreate,
     AdminGymRow,
@@ -16,10 +17,15 @@ from app.schemas.admin import (
     AdminOut,
     AdminPayoutRow,
     AdminStudentRow,
+    AdminUniversityRow,
     PlatformOverview,
+    RosterEntryOut,
+    RosterImportOut,
+    TemporaryPasswordOut,
     TopGym,
 )
-from app.services import payout_service
+from app.schemas.plan import AdminPlanCreate, AdminPlanRow, AdminPlanUpdate
+from app.services import payout_service, roster_service
 
 router = APIRouter(prefix="/admin", tags=["Operação UniHub"], dependencies=[Depends(get_current_admin)])
 
@@ -40,9 +46,24 @@ def get_overview(db: Session = Depends(get_db)):
     start, end = payout_service.month_bounds(current_month)
 
     active_subs = db.scalars(
-        select(Subscription).where(Subscription.status == "active")
+        select(Subscription)
+        .options(joinedload(Subscription.student))
+        .where(Subscription.status == "active")
     ).all()
     subscription_revenue = float(sum((s.amount for s in active_subs), Decimal("0")))
+
+    # Receita das IES: taxa fixa do contrato + (taxa + subsídio) por aluno que assina
+    universities = db.scalars(select(University).where(University.is_active.is_(True))).all()
+    ies_revenue = Decimal("0")
+    for university in universities:
+        subscribers = sum(1 for s in active_subs if s.student.university_id == university.id)
+        ies_revenue += university.monthly_fee + (university.fee_per_student + university.subsidy_per_student) * subscribers
+
+    month_unpaid_checkins = db.scalar(
+        select(func.count(CheckIn.id)).where(
+            CheckIn.timestamp >= start, CheckIn.timestamp < end, CheckIn.is_paid.is_(False)
+        )
+    )
 
     month_checkins, month_payout_total = db.execute(
         select(func.count(CheckIn.id), func.coalesce(func.sum(CheckIn.payout_amount_recorded), 0))
@@ -64,10 +85,13 @@ def get_overview(db: Session = Depends(get_db)):
     return PlatformOverview(
         active_students=len(active_subs),
         subscription_revenue=subscription_revenue,
+        ies_revenue=float(ies_revenue),
         month_checkins=month_checkins,
+        month_unpaid_checkins=month_unpaid_checkins or 0,
         month_payout_total=payout_total,
-        estimated_margin=subscription_revenue - payout_total,
+        estimated_margin=subscription_revenue + float(ies_revenue) - payout_total,
         active_gyms=active_gyms or 0,
+        active_universities=len(universities),
         top_gyms=[TopGym(gym_name=name, checkins=c) for name, c in top_rows],
     )
 
@@ -274,6 +298,228 @@ def list_students(db: Session = Depends(get_db)):
                 plan_name=sub.plan.name if sub else None,
                 subscription_status=sub.status if sub else None,
                 total_checkins=checkin_counts.get(s.id, 0),
+                institutional_email=s.institutional_email,
+                verified=s.is_verified,
             )
         )
     return rows
+
+
+def _new_temporary_password() -> str:
+    # 8 caracteres fáceis de ditar (sem 0/O, 1/l/I)
+    alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(8))
+
+
+@router.post("/students/{student_id}/temporary-password", response_model=TemporaryPasswordOut)
+def reset_student_password(student_id: int, db: Session = Depends(get_db)):
+    """Suporte manual: gera uma senha temporária para o aluno (mostrada uma vez)."""
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudante não encontrado.")
+    password = _new_temporary_password()
+    student.password_hash = hash_password(password)
+    db.commit()
+    return TemporaryPasswordOut(temporary_password=password)
+
+
+@router.post("/gyms/{gym_id}/temporary-password", response_model=TemporaryPasswordOut)
+def reset_gym_password(gym_id: int, db: Session = Depends(get_db)):
+    """Suporte manual: gera uma senha temporária para a academia (mostrada uma vez)."""
+    gym = db.get(Gym, gym_id)
+    if gym is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Academia não encontrada.")
+    password = _new_temporary_password()
+    gym.password_hash = hash_password(password)
+    db.commit()
+    return TemporaryPasswordOut(temporary_password=password)
+
+
+# ---------------------------------------------------------------- Planos
+
+
+def _plan_row(db: Session, plan: Plan) -> AdminPlanRow:
+    subscribers = db.scalar(
+        select(func.count(Subscription.id)).where(
+            Subscription.plan_id == plan.id, Subscription.status == "active"
+        )
+    )
+    row = AdminPlanRow.model_validate(plan)
+    row.active_subscribers = subscribers or 0
+    return row
+
+
+# Campos que aceitam null para "sem restrição"
+_NULLABLE_PLAN_FIELDS = {"max_checkins_per_month", "max_checkins_per_day", "allowed_from", "allowed_until"}
+
+
+def _valid_gym_ids(db: Session, ids: list[int]) -> list[int]:
+    if not ids:
+        return []
+    found = set(db.scalars(select(Gym.id).where(Gym.id.in_(ids))).all())
+    return sorted(found)
+
+
+def _clean_categories(values: list[str]) -> list[str]:
+    return [v.strip().lower() for v in values if v.strip()]
+
+
+@router.get("/plans", response_model=list[AdminPlanRow])
+def list_plans_admin(db: Session = Depends(get_db)):
+    """Todos os planos, inclusive os desativados, com o número de assinantes."""
+    plans = db.scalars(select(Plan).order_by(Plan.tier)).all()
+    return [_plan_row(db, p) for p in plans]
+
+
+@router.post("/plans", response_model=AdminPlanRow, status_code=status.HTTP_201_CREATED)
+def create_plan(payload: AdminPlanCreate, db: Session = Depends(get_db)):
+    next_tier = (db.scalar(select(func.max(Plan.tier))) or 0) + 1
+    plan = Plan(
+        name=payload.name.strip(),
+        monthly_price=Decimal(str(payload.monthly_price)),
+        tier=next_tier,
+        color="#FF5A1F",
+        included_categories=_clean_categories(payload.included_categories),
+        benefits_description=payload.benefits_description.strip(),
+        has_running_coach=payload.has_running_coach,
+        is_active=payload.is_active,
+        all_gyms=payload.all_gyms,
+        gym_ids=_valid_gym_ids(db, payload.gym_ids),
+        max_checkins_per_month=payload.max_checkins_per_month,
+        max_checkins_per_day=payload.max_checkins_per_day,
+        allowed_from=payload.allowed_from,
+        allowed_until=payload.allowed_until,
+        restrictions_note=payload.restrictions_note.strip(),
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return _plan_row(db, plan)
+
+
+@router.put("/plans/{plan_id}", response_model=AdminPlanRow)
+def update_plan(plan_id: int, payload: AdminPlanUpdate, db: Session = Depends(get_db)):
+    """Edita o plano. Novo preço vale para novas assinaturas e trocas de plano;
+    quem já assina mantém o valor contratado até trocar."""
+    plan = db.get(Plan, plan_id)
+    if plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
+
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("monthly_price") is not None:
+        data["monthly_price"] = Decimal(str(data["monthly_price"]))
+    if data.get("included_categories") is not None:
+        data["included_categories"] = _clean_categories(data["included_categories"])
+    if data.get("name") is not None:
+        data["name"] = data["name"].strip()
+    if data.get("gym_ids") is not None:
+        data["gym_ids"] = _valid_gym_ids(db, data["gym_ids"])
+    if data.get("restrictions_note") is not None:
+        data["restrictions_note"] = data["restrictions_note"].strip()
+    for field, value in data.items():
+        if value is not None or field in _NULLABLE_PLAN_FIELDS:
+            setattr(plan, field, value)
+
+    db.commit()
+    db.refresh(plan)
+    return _plan_row(db, plan)
+
+
+# --- Faculdades: lista oficial de alunos (CSV enviado pela IES) ---
+
+def _university_or_404(db: Session, university_id: int) -> University:
+    university = db.get(University, university_id)
+    if university is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculdade não encontrada.")
+    return university
+
+
+def _university_row(db: Session, university: University) -> AdminUniversityRow:
+    students = db.scalars(select(Student).where(Student.university_id == university.id)).all()
+    roster_emails = set(
+        db.scalars(
+            select(UniversityRosterEntry.email).where(UniversityRosterEntry.university_id == university.id)
+        ).all()
+    )
+    imported_at = db.scalar(
+        select(func.max(UniversityRosterEntry.imported_at)).where(UniversityRosterEntry.university_id == university.id)
+    )
+    in_roster = sum(1 for s in students if (s.institutional_email or s.email) in roster_emails)
+    return AdminUniversityRow(
+        id=university.id,
+        name=university.name,
+        email_domains=list(university.email_domains or []),
+        is_active=university.is_active,
+        students=len(students),
+        verified_students=sum(1 for s in students if s.is_verified),
+        roster_size=len(roster_emails),
+        roster_imported_at=imported_at,
+        students_in_roster=in_roster if roster_emails else 0,
+        students_outside_roster=(len(students) - in_roster) if roster_emails else 0,
+    )
+
+
+@router.get("/universities", response_model=list[AdminUniversityRow])
+def list_universities_admin(db: Session = Depends(get_db)):
+    universities = db.scalars(select(University).order_by(University.name)).all()
+    return [_university_row(db, u) for u in universities]
+
+
+@router.get("/universities/{university_id}/roster", response_model=list[RosterEntryOut])
+def list_roster(
+    university_id: int,
+    q: str | None = Query(default=None, max_length=120),
+    limit: int = Query(default=200, ge=1, le=1000),
+    db: Session = Depends(get_db),
+):
+    """Amostra da lista importada (busca por e-mail, nome ou RA)."""
+    _university_or_404(db, university_id)
+    query = select(UniversityRosterEntry).where(UniversityRosterEntry.university_id == university_id)
+    if q:
+        term = f"%{q.strip().lower()}%"
+        query = query.where(
+            or_(
+                UniversityRosterEntry.email.like(term),
+                func.lower(UniversityRosterEntry.name).like(term),
+                UniversityRosterEntry.ra.like(term),
+            )
+        )
+    entries = db.scalars(query.order_by(UniversityRosterEntry.email).limit(limit)).all()
+    emails = [e.email for e in entries]
+    registered = set(
+        db.scalars(
+            select(Student.institutional_email).where(Student.institutional_email.in_(emails))
+        ).all()
+    ) if emails else set()
+    return [
+        RosterEntryOut(email=e.email, name=e.name, ra=e.ra, registered=e.email in registered) for e in entries
+    ]
+
+
+@router.post("/universities/{university_id}/roster", response_model=RosterImportOut)
+async def import_roster(
+    university_id: int,
+    file: UploadFile,
+    mode: str = Query(default="replace", pattern="^(replace|append)$"),
+    db: Session = Depends(get_db),
+):
+    """Importa o CSV com os e-mails dos alunos ativos da IES.
+
+    replace: a lista nova substitui a anterior (uso normal a cada semestre).
+    append: só acrescenta (ex.: calouros que entraram depois).
+    """
+    university = _university_or_404(db, university_id)
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="O CSV deve ter no máximo 5 MB.")
+    result = roster_service.import_roster(db, university, content, replace=(mode == "replace"))
+    return RosterImportOut(**result.__dict__)
+
+
+@router.delete("/universities/{university_id}/roster", response_model=AdminUniversityRow)
+def clear_roster(university_id: int, db: Session = Depends(get_db)):
+    """Apaga a lista: a faculdade volta a validar só pelo domínio + código."""
+    university = _university_or_404(db, university_id)
+    db.execute(delete(UniversityRosterEntry).where(UniversityRosterEntry.university_id == university.id))
+    db.commit()
+    return _university_row(db, university)

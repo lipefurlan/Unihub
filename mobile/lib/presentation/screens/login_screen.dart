@@ -6,6 +6,19 @@ import 'package:shared_models/shared_models.dart';
 import '../providers.dart';
 import '../widgets/common.dart';
 
+// Conta de demonstração do seed (aparece como atalho para a banca)
+const _demoEmail = 'joao.silva@dac.unicamp.br';
+const _demoPassword = 'senha123';
+
+/// Envia o ID token do Google para a API e abre a sessão.
+Future<void> googleLogin(BuildContext context, WidgetRef ref, String idToken) async {
+  try {
+    await ref.read(authProvider.notifier).loginWithGoogle(idToken);
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
+  }
+}
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -24,6 +37,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _fillDemo() {
+    _emailController.text = _demoEmail;
+    _passwordController.text = _demoPassword;
+    _submit();
   }
 
   Future<void> _submit() async {
@@ -90,14 +109,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           : const Text('Entrar'),
                     ),
-                    const SizedBox(height: UniHubSpacing.x4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => context.go('/esqueci-senha'),
+                        child: const Text('Esqueci minha senha'),
+                      ),
+                    ),
+                    if (googleLoginEnabled) ...[
+                      const OrDivider(),
+                      const SizedBox(height: UniHubSpacing.x4),
+                      GoogleLoginButton(
+                        onIdToken: (token) => googleLogin(context, ref, token),
+                        onError: (e) => showApiError(context, e),
+                      ),
+                      const SizedBox(height: UniHubSpacing.x2),
+                    ],
                     TextButton(
                       onPressed: () => context.go('/register'),
                       child: const Text('Ainda não tem conta? Cadastre-se'),
                     ),
-                    const SizedBox(height: UniHubSpacing.x8),
+                    const SizedBox(height: UniHubSpacing.x6),
+                    OutlinedButton(
+                      onPressed: _loading ? null : _fillDemo,
+                      child: const Text('Entrar como aluno de demonstração'),
+                    ),
+                    const SizedBox(height: UniHubSpacing.x2),
                     const Text(
-                      'Demo: joao.silva@dac.unicamp.br · senha123',
+                      'João Silva, Unicamp · joao.silva@dac.unicamp.br · senha123',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12, color: UniHubColors.textSecondary),
                     ),

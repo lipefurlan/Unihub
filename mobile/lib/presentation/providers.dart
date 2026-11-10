@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../data/auth_repository.dart';
+import '../data/location_service.dart';
+import '../domain/access_rules.dart';
 import '../data/token_storage.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
@@ -17,6 +19,9 @@ class AuthNotifier extends AsyncNotifier<Student?> {
   @override
   Future<Student?> build() async {
     final repo = ref.watch(authRepositoryProvider);
+    ref.read(apiClientProvider).onUnauthorized = () {
+      if (state.value != null) logout();
+    };
     final token = await repo.restoreToken();
     if (token == null) return null;
     try {
@@ -34,18 +39,26 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     state = AsyncData(profile);
   }
 
+  Future<void> loginWithGoogle(String credential) async {
+    final repo = ref.read(authRepositoryProvider);
+    final profile = await repo.loginWithGoogle(credential);
+    state = AsyncData(profile);
+  }
+
   Future<void> register({
     required String name,
     required String email,
     required String password,
-    required String university,
+    String? phone,
+    String? course,
   }) async {
     final repo = ref.read(authRepositoryProvider);
     final profile = await repo.register(
       name: name,
       email: email,
       password: password,
-      university: university,
+      phone: phone,
+      course: course,
     );
     state = AsyncData(profile);
   }
@@ -54,6 +67,9 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     final repo = ref.read(authRepositoryProvider);
     state = AsyncData(await repo.fetchProfile());
   }
+
+  /// Atualiza o perfil com o que a API devolveu (ex.: depois de confirmar um código).
+  void setProfile(Student profile) => state = AsyncData(profile);
 
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
@@ -71,6 +87,63 @@ final plansProvider = FutureProvider<List<Plan>>(
 
 final gymsProvider = FutureProvider<List<Gym>>(
   (ref) => ref.watch(apiClientProvider).getGyms(),
+);
+
+/// Localização do aluno: real se permitida, senão o campus. O aluno também
+/// pode escolher o campus ou uma cidade no Explorar.
+class UserLocationNotifier extends AsyncNotifier<UserLocation> {
+  @override
+  Future<UserLocation> build() async {
+    final location = await fetchUserLocation();
+    UserLocation.current = location;
+    return location;
+  }
+
+  void choose(UserLocation location) {
+    UserLocation.current = location;
+    state = AsyncData(location);
+  }
+
+  Future<void> useDevice() async {
+    state = const AsyncLoading();
+    choose(await fetchUserLocation());
+  }
+}
+
+final userLocationProvider =
+    AsyncNotifierProvider<UserLocationNotifier, UserLocation>(UserLocationNotifier.new);
+
+final trendingGymsProvider = FutureProvider<List<TrendingGym>>(
+  (ref) => ref.watch(apiClientProvider).getTrendingGyms(),
+);
+
+final achievementsProvider = FutureProvider<Achievements>(
+  (ref) => ref.watch(apiClientProvider).getMyAchievements(),
+);
+
+/// Desafios ativos do aluno (faculdade contra faculdade e copa de cursos).
+final myChallengesProvider = FutureProvider<List<Challenge>>(
+  (ref) => ref.watch(apiClientProvider).getMyChallenges(),
+);
+
+final coursesProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(apiClientProvider).getCourses(),
+);
+
+final gymCitiesProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(apiClientProvider).getGymCities(),
+);
+
+final favoritesProvider = FutureProvider<List<Gym>>(
+  (ref) => ref.watch(apiClientProvider).getMyFavorites(),
+);
+
+final gymBusyHoursProvider = FutureProvider.family<GymBusyHours, int>(
+  (ref, id) => ref.watch(apiClientProvider).getGymBusyHours(id),
+);
+
+final myStatsProvider = FutureProvider<StudentStats>(
+  (ref) => ref.watch(apiClientProvider).getMyStats(),
 );
 
 final gymDetailProvider = FutureProvider.family<Gym, int>(

@@ -18,6 +18,7 @@ class ShellScreen extends ConsumerWidget {
 
   static const _gymItems = [
     (path: '/dashboard', icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
+    (path: '/entrada', icon: LucideIcons.qrCode, label: 'Validar entrada'),
     (path: '/students', icon: LucideIcons.users, label: 'Alunos'),
     (path: '/finance', icon: LucideIcons.receipt, label: 'Financeiro'),
     (path: '/settings', icon: LucideIcons.settings, label: 'Configurações'),
@@ -30,16 +31,35 @@ class ShellScreen extends ConsumerWidget {
       label: 'Visão geral',
     ),
     (path: '/admin/gyms', icon: LucideIcons.dumbbell, label: 'Academias'),
+    (path: '/admin/planos', icon: LucideIcons.tags, label: 'Planos'),
     (path: '/admin/payouts', icon: LucideIcons.receipt, label: 'Repasses'),
+    (path: '/admin/faculdades', icon: LucideIcons.graduationCap, label: 'Faculdades'),
     (path: '/admin/students', icon: LucideIcons.users, label: 'Estudantes'),
+    (path: '/admin/desafios', icon: LucideIcons.trophy, label: 'Desafios'),
   ];
+
+  static const _universityItems = [
+    (path: '/ies/overview', icon: LucideIcons.layoutDashboard, label: 'Visão geral'),
+    (path: '/ies/students', icon: LucideIcons.graduationCap, label: 'Alunos'),
+  ];
+
+  static _SidebarPalette _palette(PanelSession? session) => session?.isAdmin == true
+      ? _SidebarPalette.operation
+      : (session?.isUniversity == true ? _SidebarPalette.university : _SidebarPalette.gym);
+
+  static String? _suffix(PanelSession? session) =>
+      session?.isAdmin == true ? 'operação' : (session?.isUniversity == true ? 'faculdade' : null);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider).value;
-    final items = session?.isAdmin == true ? _adminItems : _gymItems;
+    final items = session?.isAdmin == true
+        ? _adminItems
+        : (session?.isUniversity == true ? _universityItems : _gymItems);
 
+    final palette = _palette(session);
     final sidebar = _SidebarContent(
+      palette: palette,
       session: session,
       items: items,
       location: location,
@@ -57,9 +77,12 @@ class ShellScreen extends ConsumerWidget {
     if (isMobile(context)) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor: palette.background,
+          foregroundColor: palette.text,
           title: UniHubWordmark(
             size: 18,
-            suffix: session?.isAdmin == true ? 'operação' : null,
+            suffix: ShellScreen._suffix(session),
+            onDark: palette.dark,
           ),
           bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
@@ -67,7 +90,7 @@ class ShellScreen extends ConsumerWidget {
           ),
         ),
         drawer: Drawer(
-          backgroundColor: UniHubColors.background,
+          backgroundColor: palette.background,
           child: sidebar,
         ),
         body: child,
@@ -79,9 +102,10 @@ class ShellScreen extends ConsumerWidget {
         children: [
           Container(
             width: 240,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
+              color: palette.background,
               border: Border(
-                right: BorderSide(color: UniHubColors.divider, width: 1),
+                right: BorderSide(color: palette.border, width: 1),
               ),
             ),
             child: sidebar,
@@ -96,6 +120,7 @@ class ShellScreen extends ConsumerWidget {
 /// Conteúdo da navegação, reusado pela coluna fixa (desktop) e pelo drawer (celular).
 class _SidebarContent extends StatelessWidget {
   const _SidebarContent({
+    required this.palette,
     required this.session,
     required this.items,
     required this.location,
@@ -103,6 +128,7 @@ class _SidebarContent extends StatelessWidget {
     required this.onLogout,
   });
 
+  final _SidebarPalette palette;
   final PanelSession? session;
   final List<({String path, IconData icon, String label})> items;
   final String location;
@@ -124,17 +150,15 @@ class _SidebarContent extends StatelessWidget {
             ),
             child: UniHubWordmark(
               size: 20,
-              suffix: session?.isAdmin == true ? 'operação' : null,
+              suffix: ShellScreen._suffix(session),
+              onDark: palette.dark,
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),
             child: Text(
               session?.displayName ?? '',
-              style: const TextStyle(
-                fontSize: 13,
-                color: UniHubColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: palette.muted),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -142,14 +166,17 @@ class _SidebarContent extends StatelessWidget {
           const SizedBox(height: UniHubSpacing.x6),
           for (final item in items)
             _NavItem(
+              palette: palette,
               icon: item.icon,
               label: item.label,
-              selected: location == item.path,
+              // Subpáginas (ex.: detalhe do desafio) mantêm o item aceso
+              selected: location == item.path || location.startsWith('${item.path}/'),
               onTap: () => onNavigate(item.path),
             ),
           const Spacer(),
-          const Divider(),
+          Divider(color: palette.border),
           _NavItem(
+            palette: palette,
             icon: LucideIcons.logOut,
             label: 'Sair',
             selected: false,
@@ -164,12 +191,14 @@ class _SidebarContent extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
+    required this.palette,
     required this.icon,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
+  final _SidebarPalette palette;
   final IconData icon;
   final String label;
   final bool selected;
@@ -201,9 +230,7 @@ class _NavItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected
-                    ? UniHubColors.accent
-                    : UniHubColors.textSecondary,
+                color: selected ? UniHubColors.accent : palette.muted,
               ),
               const SizedBox(width: UniHubSpacing.x3),
               Text(
@@ -211,9 +238,7 @@ class _NavItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? UniHubColors.textPrimary
-                      : UniHubColors.textSecondary,
+                  color: selected ? palette.text : palette.muted,
                 ),
               ),
             ],
@@ -222,4 +247,44 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Cores do menu lateral por área, para cada painel ter cara própria:
+/// academia em branco, faculdade em papel e operação UniHub em preto café.
+class _SidebarPalette {
+  const _SidebarPalette({
+    required this.background,
+    required this.border,
+    required this.text,
+    required this.muted,
+    this.dark = false,
+  });
+
+  final Color background;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final bool dark;
+
+  static const gym = _SidebarPalette(
+    background: UniHubColors.background,
+    border: UniHubColors.divider,
+    text: UniHubColors.textPrimary,
+    muted: UniHubColors.textSecondary,
+  );
+
+  static const university = _SidebarPalette(
+    background: UniHubColors.surface,
+    border: UniHubColors.divider,
+    text: UniHubColors.textPrimary,
+    muted: UniHubColors.textSecondary,
+  );
+
+  static const operation = _SidebarPalette(
+    background: UniHubColors.textPrimary,
+    border: Color(0x1FFFFFFF),
+    text: Colors.white,
+    muted: Color(0xB3FFFFFF),
+    dark: true,
+  );
 }

@@ -85,3 +85,18 @@ def get_current_gym(
     if gym is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Academia não encontrada.")
     return gym
+
+
+def get_current_university(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+):
+    from app.models.university import University
+
+    payload = _decode_token(credentials)
+    if payload.get("role") != "ies":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito às faculdades conveniadas.")
+    university = db.get(University, int(payload["sub"]))
+    if university is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Faculdade não encontrada.")
+    return university

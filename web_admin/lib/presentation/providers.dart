@@ -20,6 +20,9 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
   @override
   Future<PanelSession?> build() async {
     final repo = ref.watch(authRepositoryProvider);
+    ref.read(apiClientProvider).onUnauthorized = () {
+      if (state.value != null) logout();
+    };
     try {
       return await repo.restore();
     } on ApiException {
@@ -33,6 +36,13 @@ class PanelSessionNotifier extends AsyncNotifier<PanelSession?> {
     final session = await ref
         .read(authRepositoryProvider)
         .login(email, password);
+    state = AsyncData(session);
+  }
+
+  Future<void> loginWithGoogle(String credential) async {
+    final session = await ref
+        .read(authRepositoryProvider)
+        .loginWithGoogle(credential);
     state = AsyncData(session);
   }
 
@@ -81,6 +91,14 @@ final adminOverviewProvider = FutureProvider<PlatformOverview>(
   (ref) => ref.watch(apiClientProvider).getAdminOverview(),
 );
 
+final adminPlansProvider = FutureProvider<List<AdminPlan>>(
+  (ref) => ref.watch(apiClientProvider).getAdminPlans(),
+);
+
+final adminUniversitiesProvider = FutureProvider<List<AdminUniversity>>(
+  (ref) => ref.watch(apiClientProvider).getAdminUniversities(),
+);
+
 final adminGymsProvider = FutureProvider<List<AdminGym>>(
   (ref) => ref.watch(apiClientProvider).getAdminGyms(),
 );
@@ -93,4 +111,35 @@ final adminPayoutsProvider =
 
 final adminStudentsProvider = FutureProvider<List<AdminStudentRow>>(
   (ref) => ref.watch(apiClientProvider).getAdminStudents(),
+);
+
+// ------------------------------------------------------ dados (faculdade)
+
+final iesOverviewProvider = FutureProvider<UniversityOverview>(
+  (ref) => ref.watch(apiClientProvider).getUniversityOverview(),
+);
+
+final iesStudentsProvider = FutureProvider<List<UniversityStudentRow>>(
+  (ref) => ref.watch(apiClientProvider).getUniversityStudents(),
+);
+
+// ------------------------------------------------------------- desafios
+// Operação vê todos; a faculdade, os entre faculdades e os dos seus cursos.
+
+bool _asUniversity(Ref ref) => ref.watch(sessionProvider).value?.isUniversity == true;
+
+final challengesProvider = FutureProvider<List<Challenge>>(
+  (ref) => ref.watch(apiClientProvider).getChallenges(asUniversity: _asUniversity(ref)),
+);
+
+final challengeDetailProvider = FutureProvider.family<Challenge, int>(
+  (ref, id) => ref.watch(apiClientProvider).getChallengeDetail(id, asUniversity: _asUniversity(ref)),
+);
+
+final universitiesProvider = FutureProvider<List<({int id, String name})>>(
+  (ref) => ref.watch(apiClientProvider).getUniversities(),
+);
+
+final scoreboardProvider = FutureProvider.family<Challenge, String>(
+  (ref, token) => ref.watch(apiClientProvider).getScoreboard(token),
 );

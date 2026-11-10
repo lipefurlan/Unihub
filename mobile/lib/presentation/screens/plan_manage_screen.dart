@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
 import '../widgets/common.dart';
 
-/// Troca de plano (sem pagamento real: só atualiza a assinatura).
+/// Planos: assinar (vai ao checkout), trocar, pausar nas férias ou retomar.
 class PlanManageScreen extends ConsumerStatefulWidget {
   const PlanManageScreen({super.key});
 
@@ -23,13 +24,23 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
 
     final current = student.subscription;
     if (current?.plan.id == plan.id) return;
+    // Primeira assinatura passa pelo checkout (PIX ou cartão)
+    if (current == null) {
+      // Só assina quem confirmou o e-mail pessoal e o da faculdade
+      if (!student.isVerified) {
+        context.push('/confirmar-email');
+        return;
+      }
+      context.push('/checkout', extra: plan);
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(current == null ? 'Assinar ${plan.name}?' : 'Trocar para ${plan.name}?'),
+        title: Text('Trocar para ${plan.name}?'),
         content: Text(
-          '${formatBRL(plan.monthlyPrice)}/mês. ${plan.benefitsDescription} '
+          '${_priceLabel(student, plan)}. ${plan.benefitsDescription} '
           '(POC: nenhuma cobrança real será feita.)',
         ),
         actions: [
@@ -48,12 +59,7 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
 
     setState(() => _busy = true);
     try {
-      final api = ref.read(apiClientProvider);
-      if (current == null) {
-        await api.createSubscription(plan.id);
-      } else {
-        await api.updateSubscription(current.id, planId: plan.id);
-      }
+      await ref.read(apiClientProvider).updateSubscription(current.id, planId: plan.id);
       await ref.read(authProvider.notifier).refreshProfile();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -67,14 +73,70 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
     }
   }
 
+  /// Pausa nas férias (sem cobrança e sem check-in) ou retoma.
+  Future<void> _togglePause(Subscription subscription) async {
+    final pausing = subscription.status == 'active';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(pausing ? 'Pausar o plano?' : 'Retomar o plano?'),
+        content: Text(
+          pausing
+              ? 'Ideal para férias: a mensalidade não é cobrada e os check-ins ficam bloqueados até você retomar.'
+              : 'Os check-ins voltam a funcionar agora e a cobrança volta no próximo ciclo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(pausing ? 'Pausar' : 'Retomar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(apiClientProvider)
+          .updateSubscription(subscription.id, status: pausing ? 'paused' : 'active');
+      await ref.read(authProvider.notifier).refreshProfile();
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final student = ref.watch(authProvider).value;
     final plansAsync = ref.watch(plansProvider);
     final currentPlanId = student?.subscription?.plan.id;
 
+    final subscription = student?.subscription;
     return Scaffold(
       appBar: AppBar(title: const Text('Planos')),
+      bottomNavigationBar: subscription == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(UniHubSpacing.x6),
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : () => _togglePause(subscription),
+                  icon: Icon(
+                    subscription.status == 'paused' ? LucideIcons.play : LucideIcons.pause,
+                    size: 16,
+                  ),
+                  label: Text(
+                    subscription.status == 'paused' ? 'Retomar plano' : 'Pausar plano nas férias',
+                  ),
+                ),
+              ),
+            ),
       body: plansAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => EmptyState(icon: LucideIcons.wifiOff, message: '$e'),
@@ -131,11 +193,40 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
                             style: const TextStyle(
                                 fontSize: 13, color: UniHubColors.textSecondary),
                           ),
+                          if (!plan.allGyms) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${plan.gymIds.length} academia${plan.gymIds.length == 1 ? '' : 's'} incluída${plan.gymIds.length == 1 ? '' : 's'}',
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700, color: UniHubColors.accentPressed),
+                            ),
+                          ],
+                          if (plan.restrictionLines.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              plan.restrictionLines.join(' · '),
+                              style: const TextStyle(fontSize: 12, color: UniHubColors.textTertiary),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(width: UniHubSpacing.x3),
-                    Text('${formatBRL(plan.monthlyPrice)}/mês', style: UniHubStyles.money(size: 14)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${formatBRL(student?.priceFor(plan) ?? plan.monthlyPrice)}/mês',
+                          style: UniHubStyles.money(size: 14),
+                        ),
+                        if ((student?.universitySubsidy ?? 0) > 0)
+                          Text(
+                            'com subsídio da ${student!.university}',
+                            style: const TextStyle(
+                                fontSize: 11, color: UniHubColors.textSecondary),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -145,4 +236,12 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
       ),
     );
   }
+}
+
+/// "R$ 120,00/mês (R$ 130,00 menos R$ 10,00 de subsídio da Unicamp)".
+String _priceLabel(Student student, Plan plan) {
+  final price = '${formatBRL(student.priceFor(plan))}/mês';
+  if (student.universitySubsidy <= 0) return price;
+  return '$price (${formatBRL(plan.monthlyPrice)} menos '
+      '${formatBRL(student.universitySubsidy)} de subsídio da ${student.university})';
 }

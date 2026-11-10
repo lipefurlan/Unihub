@@ -3,9 +3,20 @@ from pydantic import BaseModel, EmailStr, Field
 
 class StudentRegister(BaseModel):
     name: str = Field(min_length=2, max_length=120)
+    # E-mail de login. Sem institutional_email, ele é o da faculdade (fluxo
+    # padrão do app: um e-mail, um código).
     email: EmailStr
+    # Opcional: e-mail da faculdade separado do de login. Se vier, o "email"
+    # vira o pessoal e cada um recebe um código.
+    institutional_email: EmailStr | None = None
+    # Celular com WhatsApp, ex.: "(19) 99999-0000" ou "+55 19 99999-0000"
+    phone: str | None = Field(default=None, max_length=30)
     password: str = Field(min_length=6)
-    university: str = Field(min_length=2, max_length=120)
+    # A universidade vem do domínio do e-mail (IES conveniada); o campo
+    # continua aceito para não quebrar clientes antigos, mas é ignorado.
+    university: str | None = None
+    # Opcional: entra nos desafios entre cursos da faculdade
+    course: str | None = Field(default=None, max_length=80)
 
 
 class LoginRequest(BaseModel):
@@ -16,4 +27,24 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    role: str  # student | gym
+    role: str  # student | gym | admin | ies
+
+
+class GoogleLoginRequest(BaseModel):
+    # ID token (JWT) devolvido pelo botão "Fazer login com o Google"
+    credential: str = Field(min_length=10)
+    # O painel (academia/admin) manda False: lá o Google só entra em conta existente
+    allow_signup: bool = True
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=10)
+    new_password: str = Field(min_length=6)
+
+
+class MessageResponse(BaseModel):
+    detail: str

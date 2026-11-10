@@ -9,6 +9,9 @@ class Gym {
   final int capacity;
   final String openingHours;
   final String? photoUrl;
+  final String city;
+  final double? ratingAvg; // nota média dos alunos (null = sem avaliações)
+  final int ratingCount;
 
   /// Presente apenas na visão da própria academia (painel).
   final String? email;
@@ -25,6 +28,9 @@ class Gym {
     required this.capacity,
     required this.openingHours,
     this.photoUrl,
+    this.city = '',
+    this.ratingAvg,
+    this.ratingCount = 0,
     this.email,
     this.checkinPayoutAmount,
   });
@@ -40,7 +46,45 @@ class Gym {
         capacity: json['capacity'] as int,
         openingHours: json['opening_hours'] as String,
         photoUrl: json['photo_url'] as String?,
+        city: json['city'] as String? ?? '',
+        ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
+        ratingCount: json['rating_count'] as int? ?? 0,
         email: json['email'] as String?,
         checkinPayoutAmount: (json['checkin_payout_amount'] as num?)?.toDouble(),
+      );
+}
+
+
+/// Movimento por hora (check-ins UniHub dos últimos 30 dias).
+class GymBusyHours {
+  final Map<int, int> checkinsByHour;
+  final int? quietestStart;
+  final int? quietestEnd;
+
+  const GymBusyHours({required this.checkinsByHour, this.quietestStart, this.quietestEnd});
+
+  int get peak => checkinsByHour.values.fold(0, (a, b) => a > b ? a : b);
+
+  factory GymBusyHours.fromJson(Map<String, dynamic> json) => GymBusyHours(
+        checkinsByHour: {
+          for (final h in json['hours'] as List)
+            (h as Map<String, dynamic>)['hour'] as int: h['checkins'] as int,
+        },
+        quietestStart: json['quietest_start'] as int?,
+        quietestEnd: json['quietest_end'] as int?,
+      );
+}
+
+
+/// Academia em alta: check-ins UniHub nos últimos 7 dias.
+class TrendingGym {
+  final Gym gym;
+  final int recentCheckins;
+
+  const TrendingGym({required this.gym, required this.recentCheckins});
+
+  factory TrendingGym.fromJson(Map<String, dynamic> json) => TrendingGym(
+        gym: Gym.fromJson(json['gym'] as Map<String, dynamic>),
+        recentCheckins: json['recent_checkins'] as int,
       );
 }

@@ -7,6 +7,8 @@ from app.core.database import get_db
 from app.core.security import get_current_student
 from app.models import Plan, Student, Subscription
 from app.schemas.subscription import SubscriptionCreate, SubscriptionOut, SubscriptionUpdate
+from app.services import verification_service
+from app.services.university_service import student_price
 
 router = APIRouter(prefix="/subscriptions", tags=["Assinaturas"])
 
@@ -20,8 +22,9 @@ def create_subscription(
     student: Student = Depends(get_current_student),
     db: Session = Depends(get_db),
 ):
+    verification_service.require_verified(student)
     plan = db.get(Plan, payload.plan_id)
-    if plan is None:
+    if plan is None or not plan.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
 
     if student.active_subscription is not None:
@@ -36,7 +39,8 @@ def create_subscription(
         plan_id=plan.id,
         start_date=today,
         renewal_date=today + timedelta(days=RENEWAL_CYCLE_DAYS),
-        amount=plan.monthly_price,  # snapshot do preço contratado
+        # Snapshot do que o aluno paga: preço do plano menos o subsídio da IES
+        amount=student_price(plan.monthly_price, student.university_ref),
         status="active",
     )
     db.add(subscription)
@@ -59,10 +63,11 @@ def update_subscription(
 
     if payload.plan_id is not None:
         plan = db.get(Plan, payload.plan_id)
-        if plan is None:
+        # Plano desativado só aceita quem já está nele (não entra gente nova)
+        if plan is None or (not plan.is_active and plan.id != subscription.plan_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
         subscription.plan_id = plan.id
-        subscription.amount = plan.monthly_price
+        subscription.amount = student_price(plan.monthly_price, student.university_ref)
 
     if payload.status is not None:
         if payload.status not in ("active", "paused", "canceled"):

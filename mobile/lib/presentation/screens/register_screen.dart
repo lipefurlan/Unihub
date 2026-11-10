@@ -5,6 +5,7 @@ import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
 import '../widgets/common.dart';
+import 'login_screen.dart' show googleLogin;
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -17,15 +18,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _universityController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _course;
   bool _loading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _universityController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -37,8 +39,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref.read(authProvider.notifier).register(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
+            phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
             password: _passwordController.text,
-            university: _universityController.text.trim(),
+            course: _course,
           );
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -72,17 +75,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: UniHubSpacing.x4),
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'E-mail universitário'),
+                      decoration: const InputDecoration(
+                        labelText: 'E-mail da faculdade',
+                        helperText: 'Precisa ser de uma faculdade conveniada',
+                      ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) =>
                           v == null || !v.contains('@') ? 'Informe um e-mail válido' : null,
                     ),
                     const SizedBox(height: UniHubSpacing.x4),
                     TextFormField(
-                      controller: _universityController,
-                      decoration: const InputDecoration(labelText: 'Universidade'),
-                      validator: (v) =>
-                          v == null || v.trim().length < 2 ? 'Informe sua universidade' : null,
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Celular com WhatsApp',
+                        hintText: '(19) 99999-0000',
+                        helperText: 'Para avisos de treino e desafios',
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                        return digits.length < 10 ? 'Informe DDD + número' : null;
+                      },
+                    ),
+                    const SizedBox(height: UniHubSpacing.x4),
+                    // Opcional: coloca o aluno na copa entre cursos da faculdade
+                    DropdownButtonFormField<String>(
+                      initialValue: _course,
+                      decoration: const InputDecoration(
+                        labelText: 'Curso (opcional)',
+                        helperText: 'Seus treinos valem pontos para o curso',
+                      ),
+                      items: [
+                        for (final c in ref.watch(coursesProvider).value ?? const <String>[])
+                          DropdownMenuItem(value: c, child: Text(c)),
+                      ],
+                      onChanged: (v) => setState(() => _course = v),
                     ),
                     const SizedBox(height: UniHubSpacing.x4),
                     TextFormField(
@@ -92,6 +119,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onFieldSubmitted: (_) => _submit(),
                       validator: (v) =>
                           v == null || v.length < 6 ? 'Use ao menos 6 caracteres' : null,
+                    ),
+                    const SizedBox(height: UniHubSpacing.x3),
+                    const Text(
+                      'Vamos mandar um código para o e-mail da faculdade para confirmar que ele é seu.',
+                      style: TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
                     ),
                     const SizedBox(height: UniHubSpacing.x6),
                     FilledButton(
@@ -104,6 +136,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             )
                           : const Text('Criar conta'),
                     ),
+                    if (googleLoginEnabled) ...[
+                      const SizedBox(height: UniHubSpacing.x4),
+                      const OrDivider(),
+                      const SizedBox(height: UniHubSpacing.x4),
+                      GoogleLoginButton(
+                        onIdToken: (token) => googleLogin(context, ref, token),
+                        onError: (e) => showApiError(context, e),
+                      ),
+                    ],
                     const SizedBox(height: UniHubSpacing.x4),
                     TextButton(
                       onPressed: () => context.go('/login'),

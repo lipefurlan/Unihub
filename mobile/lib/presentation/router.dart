@@ -5,7 +5,9 @@ import 'package:shared_models/shared_models.dart';
 
 import 'providers.dart';
 import 'screens/checkin_success_screen.dart';
+import 'screens/challenge_screen.dart';
 import 'screens/checkin_tab.dart';
+import 'screens/checkout_screen.dart';
 import 'screens/explore_tab.dart';
 import 'screens/gym_detail_screen.dart';
 import 'screens/home_tab.dart';
@@ -15,6 +17,7 @@ import 'screens/profile_tab.dart';
 import 'screens/register_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/student_card_screen.dart';
+import 'screens/verify_email_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Notifica o GoRouter quando o estado de auth muda (login/logout)
@@ -26,13 +29,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/home',
     refreshListenable: authListenable,
     redirect: (context, state) {
+      // Telas de senha abrem direto, logado ou não (o link vem por e-mail)
+      if ({'/esqueci-senha', '/redefinir-senha'}.contains(state.matchedLocation)) return null;
+
       final auth = authListenable.value;
       if (auth.isLoading) return '/splash';
 
-      final signedIn = auth.value != null;
+      final student = auth.value;
+      final signedIn = student != null;
       final onAuthScreen = {'/login', '/register', '/splash'}.contains(state.matchedLocation);
       if (!signedIn && !onAuthScreen) return '/login';
-      if (signedIn && onAuthScreen) return '/home';
+      // Logo após cadastro/login, quem ainda não confirmou os e-mails vê a
+      // tela dos códigos (dá para pular e confirmar depois)
+      if (signedIn && onAuthScreen) return student.isVerified ? '/home' : '/confirmar-email';
       return null;
     },
     routes: [
@@ -44,6 +53,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(
+        path: '/esqueci-senha',
+        builder: (context, state) => ForgotPasswordScreen(
+          api: ref.read(apiClientProvider),
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
+      GoRoute(
+        path: '/redefinir-senha',
+        builder: (context, state) => ResetPasswordScreen(
+          api: ref.read(apiClientProvider),
+          token: state.uri.queryParameters['token'],
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
+      GoRoute(
         path: '/gyms/:id',
         builder: (context, state) =>
             GymDetailScreen(gymId: int.parse(state.pathParameters['id']!)),
@@ -53,7 +77,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => CheckinSuccessScreen(checkin: state.extra as CheckIn),
       ),
       GoRoute(path: '/plans', builder: (context, state) => const PlanManageScreen()),
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => CheckoutScreen(plan: state.extra as Plan),
+      ),
+      GoRoute(path: '/confirmar-email', builder: (context, state) => const VerifyEmailScreen()),
       GoRoute(path: '/card', builder: (context, state) => const StudentCardScreen()),
+      GoRoute(path: '/desafio', builder: (context, state) => const ChallengeScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => ShellScreen(shell: shell),
         branches: [

@@ -7,6 +7,8 @@ import 'package:shared_models/shared_models.dart';
 import '../../domain/access_rules.dart';
 import '../providers.dart';
 import '../widgets/common.dart';
+import '../widgets/rating_sheet.dart';
+import 'challenge_screen.dart' show ChallengeCard;
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -14,8 +16,13 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final student = ref.watch(authProvider).value;
-    final checkins = ref.watch(myCheckinsProvider);
+    final stats = ref.watch(myStatsProvider);
     final gyms = ref.watch(gymsProvider);
+    final favorites = ref.watch(favoritesProvider).value ?? const <Gym>[];
+    // Última visita sem nota nos últimos 3 dias: pede a avaliação
+    final toRate = ref.watch(myCheckinsProvider).value?.where((c) =>
+        c.rating == null && DateTime.now().difference(c.timestamp).inDays < 3).firstOrNull;
+    ref.watch(userLocationProvider); // redesenha quando a localização chega
 
     return Scaffold(
       appBar: AppBar(title: const UniHubWordmark()),
@@ -23,6 +30,9 @@ class HomeTab extends ConsumerWidget {
         color: UniHubColors.accent,
         onRefresh: () async {
           ref.invalidate(myCheckinsProvider);
+          ref.invalidate(myStatsProvider);
+          ref.invalidate(favoritesProvider);
+          ref.invalidate(myChallengesProvider);
           ref.invalidate(gymsProvider);
           await ref.read(authProvider.notifier).refreshProfile();
         },
@@ -38,6 +48,10 @@ class HomeTab extends ConsumerWidget {
               student?.university ?? '',
               style: const TextStyle(fontSize: 14, color: UniHubColors.textSecondary),
             ),
+            if (student != null && !student.isVerified) ...[
+              const SizedBox(height: UniHubSpacing.x6),
+              _VerifyEmailBanner(single: student.singleEmail),
+            ],
             const SizedBox(height: UniHubSpacing.x8),
             _PlanSection(student: student),
             const SizedBox(height: UniHubSpacing.x8),
@@ -46,31 +60,39 @@ class HomeTab extends ConsumerWidget {
               icon: const Icon(LucideIcons.scanLine, size: 18),
               label: const Text('Fazer check-in'),
             ),
+            if (toRate != null) ...[
+              const SizedBox(height: UniHubSpacing.x4),
+              _RateLastVisit(checkin: toRate),
+            ],
             const SizedBox(height: UniHubSpacing.x8),
-            const SectionTitle('Seu mês'),
-            const SizedBox(height: UniHubSpacing.x4),
-            checkins.when(
+            SectionTitle(
+              'Sua semana',
+              action: TextButton(
+                onPressed: () => showWeeklyGoalPicker(context, ref, student?.weeklyGoal ?? 3),
+                child: const Text('Mudar meta'),
+              ),
+            ),
+            const SizedBox(height: UniHubSpacing.x2),
+            stats.when(
               loading: () => const LinearProgressIndicator(minHeight: 2),
               error: (e, _) => Text('$e',
                   style: const TextStyle(color: UniHubColors.textSecondary, fontSize: 13)),
-              data: (list) {
-                final now = DateTime.now();
-                final monthCheckins = list
-                    .where((c) => c.timestamp.year == now.year && c.timestamp.month == now.month)
-                    .toList();
-                final visited = monthCheckins.map((c) => c.gym.id).toSet().length;
-                return Row(
-                  children: [
-                    Expanded(
-                      child: StatBlock(value: '${monthCheckins.length}', label: 'Check-ins no mês'),
-                    ),
-                    Expanded(
-                      child: StatBlock(value: '$visited', label: 'Academias visitadas'),
-                    ),
-                  ],
-                );
-              },
+              data: (st) => _WeekGoalCard(stats: st),
             ),
+            const SizedBox(height: UniHubSpacing.x8),
+            const ChallengeCard(),
+            if (favorites.isNotEmpty) ...[
+              const SizedBox(height: UniHubSpacing.x8),
+              const SectionTitle('Suas favoritas'),
+              for (final (i, gym) in favorites.indexed) ...[
+                if (i > 0) const Divider(),
+                GymTile(
+                  gym: gym,
+                  covered: planCoversGym(student, gym),
+                  onTap: () => context.push('/gyms/${gym.id}'),
+                ),
+              ],
+            ],
             const SizedBox(height: UniHubSpacing.x8),
             SectionTitle(
               'Academias próximas',
@@ -139,6 +161,7 @@ class _PlanSection extends ConsumerWidget {
     }
 
     final plan = subscription.plan;
+    final paused = subscription.status == 'paused';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -169,7 +192,7 @@ class _PlanSection extends ConsumerWidget {
             ),
             const SizedBox(width: UniHubSpacing.x3),
             Text(
-              '${formatBRL(plan.monthlyPrice)}/mês',
+              '${formatBRL(subscription.amount)}/mês',
               style: UniHubStyles.money(size: 14, weight: FontWeight.w500,
                   color: UniHubColors.textSecondary),
             ),
@@ -177,8 +200,14 @@ class _PlanSection extends ConsumerWidget {
         ),
         const SizedBox(height: UniHubSpacing.x1),
         Text(
-          'Renova em ${formatDate(subscription.renewalDate)}',
-          style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+          paused
+              ? 'Pausado: sem cobrança e sem check-in até você retomar'
+              : 'Renova em ${formatDate(subscription.renewalDate)}',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: paused ? FontWeight.w600 : FontWeight.w400,
+            color: paused ? UniHubColors.accent : UniHubColors.textSecondary,
+          ),
         ),
         if (plan.hasRunningCoach) ...[
           const SizedBox(height: UniHubSpacing.x2),
@@ -192,6 +221,228 @@ class _PlanSection extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+
+/// Meta da semana em bolinhas, sequência de semanas e resumo do mês.
+class _WeekGoalCard extends StatelessWidget {
+  const _WeekGoalCard({required this.stats});
+
+  final StudentStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = stats.weekCheckins;
+    final goal = stats.weeklyGoal;
+    final remaining = (goal - done).clamp(0, goal);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < goal; i++)
+              Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.only(right: UniHubSpacing.x2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i < done ? UniHubColors.accent : Colors.transparent,
+                  border: Border.all(
+                    color: i < done ? UniHubColors.accent : UniHubColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: i < done
+                    ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                    : null,
+              ),
+            const Spacer(),
+            if (stats.streakWeeks > 0)
+              Row(
+                children: [
+                  const Icon(LucideIcons.flame, size: 18, color: UniHubColors.accent),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${stats.streakWeeks} ${stats.streakWeeks == 1 ? 'semana' : 'semanas'}',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: UniHubSpacing.x2),
+        Text(
+          remaining == 0
+              ? 'Meta da semana batida: $done de $goal treinos.'
+              : 'Faltam $remaining ${remaining == 1 ? 'treino' : 'treinos'} para a meta de $goal na semana.',
+          style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+        ),
+        const SizedBox(height: UniHubSpacing.x4),
+        // Últimas semanas: barra cheia = meta batida
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final w in stats.lastWeeks)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Container(
+                    height: 6 + 30 * (w.checkins / (goal == 0 ? 1 : goal)).clamp(0, 1.4),
+                    decoration: BoxDecoration(
+                      color: w.goalMet ? UniHubColors.accent : UniHubColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Últimas 8 semanas',
+          style: TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+        ),
+        const SizedBox(height: UniHubSpacing.x6),
+        Row(
+          children: [
+            Expanded(child: StatBlock(value: '${stats.monthCheckins}', label: 'Treinos no mês')),
+            Expanded(child: StatBlock(value: '${stats.monthGyms}', label: 'Academias no mês')),
+          ],
+        ),
+        if (stats.monthTopGym != null) ...[
+          const SizedBox(height: UniHubSpacing.x3),
+          Text(
+            'Mais frequentada: ${stats.monthTopGym}',
+            style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Escolha da meta semanal (1 a 7 treinos).
+Future<void> showWeeklyGoalPicker(BuildContext context, WidgetRef ref, int current) async {
+  final goal = await showModalBottomSheet<int>(
+    context: context,
+    backgroundColor: UniHubColors.background,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(UniHubSpacing.x6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Quantos treinos por semana?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: UniHubSpacing.x4),
+            Wrap(
+              spacing: UniHubSpacing.x2,
+              children: [
+                for (var g = 1; g <= 7; g++)
+                  ChoiceChip(
+                    label: Text('$g'),
+                    selected: g == current,
+                    onSelected: (_) => Navigator.of(sheetContext).pop(g),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (goal == null || goal == current) return;
+  try {
+    await ref.read(apiClientProvider).updateMyProfile(weeklyGoal: goal);
+    ref.invalidate(myStatsProvider);
+    await ref.read(authProvider.notifier).refreshProfile();
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
+  }
+}
+
+
+/// "Como foi o treino na X?" com atalho para dar as estrelas.
+class _RateLastVisit extends ConsumerWidget {
+  const _RateLastVisit({required this.checkin});
+
+  final CheckIn checkin;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      borderRadius: UniHubRadius.brMd,
+      onTap: () => showRatingSheet(context, ref, checkin),
+      child: Container(
+        padding: const EdgeInsets.all(UniHubSpacing.x4),
+        decoration: BoxDecoration(
+          borderRadius: UniHubRadius.brMd,
+          border: Border.all(color: UniHubColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Como foi o treino na ${checkin.gym.name}?',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  const StarsRow(stars: 0),
+                ],
+              ),
+            ),
+            const Text(
+              'Avaliar',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: UniHubColors.accent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Aviso enquanto o aluno não confirmou os e-mails (não consegue assinar).
+class _VerifyEmailBanner extends StatelessWidget {
+  const _VerifyEmailBanner({required this.single});
+
+  final bool single; // um e-mail só (o da faculdade)
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: UniHubColors.accentSoft,
+      borderRadius: BorderRadius.circular(UniHubRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(UniHubRadius.md),
+        onTap: () => context.push('/confirmar-email'),
+        child: Padding(
+          padding: const EdgeInsets.all(UniHubSpacing.x4),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.mailCheck, color: UniHubColors.accent),
+              const SizedBox(width: UniHubSpacing.x3),
+              Expanded(
+                child: Text(
+                  single
+                      ? 'Confirme o e-mail da faculdade com o código que enviamos para poder assinar um plano.'
+                      : 'Confirme seus e-mails com os códigos que enviamos para poder assinar um plano.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              const Icon(LucideIcons.chevronRight, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

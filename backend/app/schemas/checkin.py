@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.gym import GymPublicOut
 
@@ -18,6 +18,33 @@ class CheckInOut(BaseModel):
     gym: GymPublicOut
     timestamp: datetime
     plan_tier_at_checkin: int
+    rating: int | None = None
+
+
+class CheckInRate(BaseModel):
+    stars: int = Field(ge=1, le=5)
+
+
+class CheckInCreatedOut(CheckInOut):
+    """Resposta do check-in: o aluno vê se a visita entrou no teto pago."""
+
+    is_paid: bool
+    entry_code: str | None
+
+
+class CheckInValidate(BaseModel):
+    code: str
+
+
+class CheckInValidatedOut(BaseModel):
+    """Resposta da recepção ao validar o código de entrada."""
+
+    id: int
+    student_name: str
+    student_university: str
+    timestamp: datetime
+    validated_at: datetime
+    already_validated: bool
 
 
 class GymCheckInOut(BaseModel):
@@ -31,3 +58,5 @@ class GymCheckInOut(BaseModel):
     student_university: str
     plan_tier_at_checkin: int
     payout_amount_recorded: float
+    is_paid: bool  # False = acima do teto mensal do aluno, sem repasse
+    validated_at: datetime | None = None

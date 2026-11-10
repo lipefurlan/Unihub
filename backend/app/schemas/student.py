@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.subscription import SubscriptionOut
 
@@ -12,9 +14,75 @@ class StudentOut(BaseModel):
     university: str
     photo_url: str | None
     status: str
+    weekly_goal: int = 3
+    home_city: str | None = None
+    course: str | None = None
+    institutional_email: str | None = None
+    email_verified: bool = False
+    institutional_email_verified: bool = False
+    phone: str | None = None
 
 
 class StudentProfileOut(StudentOut):
     """Perfil completo: dados do aluno + assinatura vigente."""
 
     subscription: SubscriptionOut | None = None
+    # Subsídio mensal da IES conveniada do aluno (desconta do preço do plano)
+    university_subsidy: float = 0
+
+
+class StudentUpdate(BaseModel):
+    """O que o aluno ajusta no próprio perfil."""
+
+    weekly_goal: int | None = Field(default=None, ge=1, le=7)
+    home_city: str | None = Field(default=None, max_length=80)
+    course: str | None = Field(default=None, max_length=80)
+    phone: str | None = Field(default=None, max_length=30)
+
+
+class VerificationSend(BaseModel):
+    kind: Literal["personal", "institutional"]
+
+
+class VerificationConfirm(BaseModel):
+    kind: Literal["personal", "institutional"]
+    code: str = Field(min_length=4, max_length=10)
+
+
+class PersonalEmailUpdate(BaseModel):
+    email: EmailStr
+
+
+class WeekStat(BaseModel):
+    week_start: str  # segunda-feira, YYYY-MM-DD
+    checkins: int
+    goal_met: bool
+
+
+class StudentStatsOut(BaseModel):
+    """Meta semanal, sequência de semanas e resumo do mês."""
+
+    weekly_goal: int
+    week_checkins: int
+    streak_weeks: int
+    last_weeks: list[WeekStat]
+    month_checkins: int
+    month_gyms: int
+    month_top_gym: str | None
+
+
+class BadgeOut(BaseModel):
+    code: str
+    title: str
+    description: str
+    target: int
+    progress: int
+    achieved: bool
+
+
+class AchievementsOut(BaseModel):
+    total_checkins: int
+    gyms_visited: int
+    current_streak: int
+    best_streak: int
+    badges: list[BadgeOut]

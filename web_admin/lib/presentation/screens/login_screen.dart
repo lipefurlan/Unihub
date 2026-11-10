@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
@@ -23,6 +24,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  static final _demoStyle = OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+  );
+
+  // Contas de demonstração do seed (atalhos para a banca)
+  void _loginAsDemo(String email, String password) {
+    _emailController.text = email;
+    _passwordController.text = password;
+    _submit();
+  }
+
+  Future<void> _googleLogin(String idToken) async {
+    try {
+      await ref.read(sessionProvider.notifier).loginWithGoogle(idToken);
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
   }
 
   Future<void> _submit() async {
@@ -58,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: UniHubSpacing.x2),
                   const Text(
-                    'Acesso para academias parceiras e para a operação UniHub.',
+                    'Acesso para academias parceiras, faculdades conveniadas e operação UniHub.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -97,16 +117,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           )
                         : const Text('Entrar no painel'),
                   ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => context.go('/esqueci-senha'),
+                      child: const Text('Esqueci minha senha'),
+                    ),
+                  ),
+                  if (googleLoginEnabled) ...[
+                    const OrDivider(),
+                    const SizedBox(height: UniHubSpacing.x4),
+                    GoogleLoginButton(
+                      onIdToken: _googleLogin,
+                      onError: (e) => showApiError(context, e),
+                    ),
+                  ],
                   const SizedBox(height: UniHubSpacing.x8),
                   const Text(
-                    'Demo academia: contato@campusfit.com.br · academia123\n'
-                    'Demo operação: admin@unihub.com.br · admin123',
+                    'Demonstração',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
                       color: UniHubColors.textSecondary,
-                      height: 1.6,
                     ),
+                  ),
+                  const SizedBox(height: UniHubSpacing.x2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: _demoStyle,
+                          onPressed: _loading
+                              ? null
+                              : () => _loginAsDemo(
+                                  'contato@campusfit.com.br',
+                                  'academia123',
+                                ),
+                          child: const Text('Academia'),
+                        ),
+                      ),
+                      const SizedBox(width: UniHubSpacing.x3),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: _demoStyle,
+                          onPressed: _loading
+                              ? null
+                              : () => _loginAsDemo(
+                                  'admin@unihub.com.br',
+                                  'admin123',
+                                ),
+                          child: const Text('Operação'),
+                        ),
+                      ),
+                      const SizedBox(width: UniHubSpacing.x3),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: _demoStyle,
+                          onPressed: _loading
+                              ? null
+                              : () => _loginAsDemo(
+                                  'programa@facamp.edu.br',
+                                  'facamp123',
+                                ),
+                          child: const Text('Faculdade'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

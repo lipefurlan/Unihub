@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_models/shared_models.dart';
 
 import '../data/panel_auth_repository.dart';
 import 'providers.dart';
 import 'screens/admin_gyms_screen.dart';
 import 'screens/admin_overview_screen.dart';
 import 'screens/admin_payouts_screen.dart';
+import 'screens/admin_plans_screen.dart';
 import 'screens/admin_students_screen.dart';
+import 'screens/admin_universities_screen.dart';
+import 'screens/challenges_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/entry_validation_screen.dart';
 import 'screens/finance_screen.dart';
+import 'screens/ies_screens.dart';
 import 'screens/login_screen.dart';
+import 'screens/scoreboard_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/students_screen.dart';
@@ -30,20 +37,27 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/dashboard',
     refreshListenable: authListenable,
     redirect: (context, state) {
+      final location = state.matchedLocation;
+      // Telas de senha abrem direto, logado ou não (o link vem por e-mail)
+      if ({'/esqueci-senha', '/redefinir-senha'}.contains(location)) return null;
+      // Placar público do desafio: TV e grupo da turma, sem login
+      if (location.startsWith('/placar/')) return null;
+
       final auth = authListenable.value;
       if (auth.isLoading) return '/splash';
 
       final session = auth.value;
-      final location = state.matchedLocation;
       final onAuthScreen = {'/login', '/splash'}.contains(location);
 
       if (session == null) return onAuthScreen ? null : '/login';
 
-      final home = session.isAdmin ? '/admin/overview' : '/dashboard';
+      final home = session.home;
       if (onAuthScreen) return home;
       // Cada role só navega na própria área
-      final inAdminArea = location.startsWith('/admin');
-      if (session.isAdmin != inAdminArea) return home;
+      final area = location.startsWith('/admin')
+          ? '/admin'
+          : (location.startsWith('/ies') ? '/ies' : '');
+      if (area != session.areaPrefix) return home;
       return null;
     },
     routes: [
@@ -53,6 +67,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/placar/:token',
+        builder: (context, state) => ScoreboardScreen(token: state.pathParameters['token']!),
+      ),
+      GoRoute(
+        path: '/esqueci-senha',
+        builder: (context, state) => ForgotPasswordScreen(
+          api: ref.read(apiClientProvider),
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
+      GoRoute(
+        path: '/redefinir-senha',
+        builder: (context, state) => ResetPasswordScreen(
+          api: ref.read(apiClientProvider),
+          token: state.uri.queryParameters['token'],
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             ShellScreen(location: state.matchedLocation, child: child),
@@ -61,6 +94,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/entrada',
+            builder: (context, state) => const EntryValidationScreen(),
           ),
           GoRoute(
             path: '/students',
@@ -88,8 +125,34 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AdminPayoutsScreen(),
           ),
           GoRoute(
+            path: '/admin/planos',
+            builder: (context, state) => const AdminPlansScreen(),
+          ),
+          GoRoute(
+            path: '/admin/faculdades',
+            builder: (context, state) => const AdminUniversitiesScreen(),
+          ),
+          GoRoute(
             path: '/admin/students',
             builder: (context, state) => const AdminStudentsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/desafios',
+            builder: (context, state) => const ChallengesScreen(),
+          ),
+          GoRoute(
+            path: '/admin/desafios/:id',
+            builder: (context, state) =>
+                ChallengeDetailScreen(challengeId: int.parse(state.pathParameters['id']!)),
+          ),
+          // Portal da faculdade conveniada
+          GoRoute(
+            path: '/ies/overview',
+            builder: (context, state) => const IesOverviewScreen(),
+          ),
+          GoRoute(
+            path: '/ies/students',
+            builder: (context, state) => const IesStudentsScreen(),
           ),
         ],
       ),

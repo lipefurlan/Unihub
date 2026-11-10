@@ -82,6 +82,8 @@ class AdminStudentRow(BaseModel):
     plan_name: str | None
     subscription_status: str | None
     total_checkins: int
+    institutional_email: str | None = None
+    verified: bool = False  # confirmou o e-mail pessoal e o da faculdade
 
 
 class TopGym(BaseModel):
@@ -93,9 +95,50 @@ class PlatformOverview(BaseModel):
     """Métricas da operação no mês corrente."""
 
     active_students: int
-    subscription_revenue: float  # receita mensal de assinaturas ativas
+    subscription_revenue: float  # o que os alunos pagam por mês (já com subsídio)
+    ies_revenue: float  # o que as IES pagam: taxa fixa + (taxa + subsídio) por aluno
     month_checkins: int
+    month_unpaid_checkins: int  # visitas acima do teto mensal (sem repasse)
     month_payout_total: float  # total devido às academias no mês
-    estimated_margin: float  # receita - repasses
+    estimated_margin: float  # alunos + IES - repasses (antes de impostos e taxas)
     active_gyms: int
+    active_universities: int
     top_gyms: list[TopGym]
+
+
+class TemporaryPasswordOut(BaseModel):
+    """Senha temporária gerada pelo admin (suporte manual); mostrada uma vez."""
+
+    temporary_password: str
+
+
+class AdminUniversityRow(BaseModel):
+    """IES na tela "Faculdades" da operação, com o estado da lista de alunos."""
+
+    id: int
+    name: str
+    email_domains: list[str]
+    is_active: bool
+    students: int  # alunos cadastrados no UniHub
+    verified_students: int  # com os dois e-mails confirmados
+    roster_size: int  # alunos na lista importada (0 = valida só pelo domínio)
+    roster_imported_at: datetime | None
+    students_in_roster: int
+    students_outside_roster: int  # cadastrados que não estão na lista atual
+
+
+class RosterEntryOut(BaseModel):
+    email: str
+    name: str | None
+    ra: str | None
+    registered: bool  # já criou conta no UniHub
+
+
+class RosterImportOut(BaseModel):
+    total_rows: int
+    imported: int
+    duplicates: int
+    invalid: int
+    wrong_domain: int
+    roster_size: int
+    errors: list[str]
