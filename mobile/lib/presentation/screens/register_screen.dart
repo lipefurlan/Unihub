@@ -19,6 +19,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _course;
   bool _loading = false;
 
   @override
@@ -37,6 +38,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
             password: _passwordController.text,
+            course: _course,
           );
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -77,6 +79,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) =>
                           v == null || !v.contains('@') ? 'Informe um e-mail válido' : null,
+                    ),
+                    const SizedBox(height: UniHubSpacing.x4),
+                    // Opcional: coloca o aluno na copa entre cursos da faculdade
+                    DropdownButtonFormField<String>(
+                      initialValue: _course,
+                      decoration: const InputDecoration(
+                        labelText: 'Curso (opcional)',
+                        helperText: 'Seus treinos valem pontos para o curso',
+                      ),
+                      items: [
+                        for (final c in ref.watch(coursesProvider).value ?? const <String>[])
+                          DropdownMenuItem(value: c, child: Text(c)),
+                      ],
+                      onChanged: (v) => setState(() => _course = v),
                     ),
                     const SizedBox(height: UniHubSpacing.x4),
                     TextFormField(

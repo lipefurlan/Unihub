@@ -49,12 +49,14 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     required String name,
     required String email,
     required String password,
+    String? course,
   }) async {
     final repo = ref.read(authRepositoryProvider);
     final profile = await repo.register(
       name: name,
       email: email,
       password: password,
+      course: course,
     );
     state = AsyncData(profile);
   }
@@ -114,8 +116,13 @@ final achievementsProvider = FutureProvider<Achievements>(
   (ref) => ref.watch(apiClientProvider).getMyAchievements(),
 );
 
-final challengeProvider = FutureProvider<Challenge>(
-  (ref) => ref.watch(apiClientProvider).getChallenge(),
+/// Desafios ativos do aluno (faculdade contra faculdade e copa de cursos).
+final myChallengesProvider = FutureProvider<List<Challenge>>(
+  (ref) => ref.watch(apiClientProvider).getMyChallenges(),
+);
+
+final coursesProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(apiClientProvider).getCourses(),
 );
 
 final gymCitiesProvider = FutureProvider<List<String>>(

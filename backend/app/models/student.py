@@ -31,6 +31,8 @@ class Student(Base):
     weekly_goal: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
     # Cidade de origem: onde o aluno passa fins de semana e férias
     home_city: Mapped[str | None] = mapped_column(String(80))
+    # Curso de graduação: permite desafios entre cursos da mesma faculdade
+    course: Mapped[str | None] = mapped_column(String(80), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     university_ref: Mapped["University | None"] = relationship()  # noqa: F821

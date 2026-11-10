@@ -11,6 +11,7 @@ from app.core.rate_limit import limiter, rate_limit_handler
 from app.routers import (
     admin,
     auth,
+    challenges,
     checkins,
     gym_portal,
     gyms,
@@ -54,6 +55,9 @@ app.include_router(gym_portal.router)
 app.include_router(gyms.router)
 app.include_router(admin.router)
 app.include_router(ies_portal.router)
+app.include_router(challenges.admin_router)
+app.include_router(challenges.ies_router)
+app.include_router(challenges.public_router)
 
 # Fotos das academias enviadas pelo admin (POC: disco local; produção: S3/R2)
 _uploads_dir = Path(__file__).resolve().parents[1] / "uploads"

@@ -114,3 +114,24 @@ final iesOverviewProvider = FutureProvider<UniversityOverview>(
 final iesStudentsProvider = FutureProvider<List<UniversityStudentRow>>(
   (ref) => ref.watch(apiClientProvider).getUniversityStudents(),
 );
+
+// ------------------------------------------------------------- desafios
+// Operação vê todos; a faculdade, os entre faculdades e os dos seus cursos.
+
+bool _asUniversity(Ref ref) => ref.watch(sessionProvider).value?.isUniversity == true;
+
+final challengesProvider = FutureProvider<List<Challenge>>(
+  (ref) => ref.watch(apiClientProvider).getChallenges(asUniversity: _asUniversity(ref)),
+);
+
+final challengeDetailProvider = FutureProvider.family<Challenge, int>(
+  (ref, id) => ref.watch(apiClientProvider).getChallengeDetail(id, asUniversity: _asUniversity(ref)),
+);
+
+final universitiesProvider = FutureProvider<List<({int id, String name})>>(
+  (ref) => ref.watch(apiClientProvider).getUniversities(),
+);
+
+final scoreboardProvider = FutureProvider.family<Challenge, String>(
+  (ref, token) => ref.watch(apiClientProvider).getScoreboard(token),
+);

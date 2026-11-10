@@ -7,6 +7,7 @@ import 'package:shared_models/shared_models.dart';
 import '../providers.dart';
 import '../widgets/common.dart';
 import '../widgets/rating_sheet.dart';
+import 'challenge_screen.dart' show pickCourse;
 import 'home_tab.dart' show showWeeklyGoalPicker;
 
 class ProfileTab extends ConsumerWidget {
@@ -74,6 +75,13 @@ class ProfileTab extends ConsumerWidget {
             label: 'Meta semanal',
             subtitle: '${student.weeklyGoal} treinos',
             onTap: () => showWeeklyGoalPicker(context, ref, student.weeklyGoal),
+          ),
+          const Divider(),
+          _ProfileAction(
+            icon: LucideIcons.graduationCap,
+            label: 'Curso',
+            subtitle: student.course ?? 'Informar para entrar na copa de cursos',
+            onTap: () => pickCourse(context, ref, student.course),
           ),
           const Divider(),
           _ProfileAction(

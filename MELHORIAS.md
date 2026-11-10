@@ -49,7 +49,11 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [x] Academias favoritas e horário mais tranquilo de cada academia.
 - [x] Avaliar a visita (1 a 5 estrelas); nota média nos cards e no painel da academia.
 - [x] Perfil com conquistas (selos) e card da sequência de semanas.
-- [x] Desafio do mês entre faculdades (check-ins por assinante) com ranking.
+- [x] Desafios configuráveis: entre faculdades (operação) ou entre cursos de uma faculdade (operação ou a própria faculdade), pontuando check-ins por aluno ou % da turma treinando toda semana.
+- [x] Painel "Desafios" com ranking, evolução semanal, histórico de campeões e placar público para TV e grupo da turma.
+- [x] Curso no cadastro e no perfil do aluno; o app mostra os desafios do aluno e quanto ele somou.
+- [ ] Prêmios e notificações dos desafios (push quando o curso cai de posição, aviso de último dia).
+- [ ] Indicador de bem-estar por curso para a coordenação (frequência ao longo do semestre).
 - [x] Explorar com carrosséis "Perto de você" e "Bombando nesta semana" e troca de localização.
 - [ ] Indique um amigo (código e link de convite).
 - [ ] Reserva de aulas (precisa da agenda das academias).

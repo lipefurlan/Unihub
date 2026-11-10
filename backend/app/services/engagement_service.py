@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import CheckIn, Gym, Student, Subscription, University
+from app.models import CheckIn, Gym, Student
 
 # Antes desta hora conta para o selo "Madrugador"
 EARLY_HOUR = 8
@@ -132,62 +132,3 @@ MONTHS_PT = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ]
-
-
-def university_challenge(db: Session, student: Student | None = None) -> dict:
-    """Desafio do mês: qual faculdade treina mais.
-
-    A pontuação é check-ins do mês por assinante ativo, para uma faculdade
-    pequena poder ganhar de uma grande.
-    """
-    today = date.today()
-    month_start = datetime.combine(today.replace(day=1), datetime.min.time())
-    next_month = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
-
-    subscribers = dict(
-        db.execute(
-            select(Student.university_id, func.count(Subscription.id))
-            .join(Subscription, Subscription.student_id == Student.id)
-            .where(Subscription.status == "active", Student.university_id.is_not(None))
-            .group_by(Student.university_id)
-        ).all()
-    )
-    checkins = dict(
-        db.execute(
-            select(Student.university_id, func.count(CheckIn.id))
-            .join(CheckIn, CheckIn.student_id == Student.id)
-            .where(CheckIn.timestamp >= month_start, Student.university_id.is_not(None))
-            .group_by(Student.university_id)
-        ).all()
-    )
-    universities = db.scalars(select(University).where(University.is_active.is_(True))).all()
-    ranking = [
-        {
-            "university_id": u.id,
-            "university": u.name,
-            "subscribers": subscribers.get(u.id, 0),
-            "checkins": checkins.get(u.id, 0),
-            "score": round(checkins.get(u.id, 0) / subscribers[u.id], 1),
-        }
-        for u in universities
-        if subscribers.get(u.id)
-    ]
-    ranking.sort(key=lambda r: (-r["score"], -r["checkins"], r["university"]))
-    for position, row in enumerate(ranking, start=1):
-        row["position"] = position
-
-    my_checkins = 0
-    if student is not None:
-        my_checkins = db.scalar(
-            select(func.count(CheckIn.id)).where(
-                CheckIn.student_id == student.id, CheckIn.timestamp >= month_start
-            )
-        ) or 0
-    return {
-        "title": f"Desafio de {MONTHS_PT[today.month - 1]}: qual faculdade treina mais?",
-        "description": "Pontua a média de check-ins por aluno assinante no mês.",
-        "ends_on": (next_month - timedelta(days=1)).isoformat(),
-        "my_university_id": student.university_id if student else None,
-        "my_checkins": my_checkins,
-        "ranking": ranking,
-    }

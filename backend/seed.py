@@ -17,7 +17,9 @@ from sqlalchemy import select
 from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.core.config import settings
-from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University
+from app.models import Admin, Challenge, CheckIn, Gym, Payout, Plan, Student, Subscription, University
+from app.services.challenge_service import create_challenge
+from app.services.engagement_service import MONTHS_PT
 from app.services.university_service import find_university_for_email, student_price
 
 random.seed(42)  # seed fixo: dados reproduzíveis entre execuções
@@ -104,28 +106,41 @@ GYMS = [
 # Estudantes — universidades da região; João Silva é a credencial de demo
 # ---------------------------------------------------------------------------
 STUDENTS = [
-    # (nome, email, universidade, tier do plano, cidade) — todos no plano único
-    ("João Silva", "joao.silva@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Mariana Costa", "mariana.costa@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
-    ("Pedro Almeida", "pedro.almeida@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Ana Beatriz Rocha", "ana.rocha@facamp.edu.br", "FACAMP", 1, "campinas"),
-    ("Lucas Ferreira", "lucas.ferreira@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Camila Souza", "camila.souza@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
-    ("Rafael Oliveira", "rafael.oliveira@fatec.sp.gov.br", "FATEC Americana", 1, "americana"),
-    ("Júlia Mendes", "julia.mendes@fam.br", "FAM Americana", 1, "americana"),
-    ("Gabriel Santos", "gabriel.santos@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Larissa Lima", "larissa.lima@esamc.br", "ESAMC Campinas", 1, "campinas"),
-    ("Thiago Carvalho", "thiago.carvalho@mackenzie.br", "Mackenzie Campinas", 1, "campinas"),
-    ("Isabela Martins", "isabela.martins@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
-    ("Matheus Pereira", "matheus.pereira@fatec.sp.gov.br", "FATEC Americana", 1, "americana"),
-    ("Beatriz Nunes", "beatriz.nunes@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Vinícius Araújo", "vinicius.araujo@fam.br", "FAM Americana", 1, "americana"),
+    # (nome, email, universidade, tier do plano, cidade, curso) — todos no plano único
+    ("João Silva", "joao.silva@dac.unicamp.br", "Unicamp", 1, "campinas", "Engenharia"),
+    ("Mariana Costa", "mariana.costa@puccampinas.edu.br", "PUC-Campinas", 1, "campinas", "Direito"),
+    ("Pedro Almeida", "pedro.almeida@dac.unicamp.br", "Unicamp", 1, "campinas", "Ciência da Computação"),
+    ("Ana Beatriz Rocha", "ana.rocha@facamp.edu.br", "FACAMP", 1, "campinas", "Administração"),
+    ("Lucas Ferreira", "lucas.ferreira@dac.unicamp.br", "Unicamp", 1, "campinas", "Medicina"),
+    ("Camila Souza", "camila.souza@puccampinas.edu.br", "PUC-Campinas", 1, "campinas", "Psicologia"),
+    ("Rafael Oliveira", "rafael.oliveira@fatec.sp.gov.br", "FATEC Americana", 1, "americana", "Ciência da Computação"),
+    ("Júlia Mendes", "julia.mendes@fam.br", "FAM Americana", 1, "americana", "Design"),
+    ("Gabriel Santos", "gabriel.santos@dac.unicamp.br", "Unicamp", 1, "campinas", "Economia"),
+    ("Larissa Lima", "larissa.lima@esamc.br", "ESAMC Campinas", 1, "campinas", "Administração"),
+    ("Thiago Carvalho", "thiago.carvalho@mackenzie.br", "Mackenzie Campinas", 1, "campinas", "Arquitetura e Urbanismo"),
+    ("Isabela Martins", "isabela.martins@puccampinas.edu.br", "PUC-Campinas", 1, "campinas", "Direito"),
+    ("Matheus Pereira", "matheus.pereira@fatec.sp.gov.br", "FATEC Americana", 1, "americana", "Engenharia"),
+    ("Beatriz Nunes", "beatriz.nunes@dac.unicamp.br", "Unicamp", 1, "campinas", "Medicina"),
+    ("Vinícius Araújo", "vinicius.araujo@fam.br", "FAM Americana", 1, "americana", "Comunicação Social"),
     # Mais alunos da FACAMP (piloto), para o portal da IES ter o que mostrar
-    ("Bruno Teixeira", "bruno.teixeira@facamp.edu.br", "FACAMP", 1, "campinas"),
-    ("Carolina Ribeiro", "carolina.ribeiro@facamp.edu.br", "FACAMP", 1, "campinas"),
-    ("Diego Moraes", "diego.moraes@facamp.edu.br", "FACAMP", 1, "campinas"),
-    ("Fernanda Duarte", "fernanda.duarte@facamp.edu.br", "FACAMP", 1, "campinas"),
+    ("Bruno Teixeira", "bruno.teixeira@facamp.edu.br", "FACAMP", 1, "campinas", "Economia"),
+    ("Carolina Ribeiro", "carolina.ribeiro@facamp.edu.br", "FACAMP", 1, "campinas", "Direito"),
+    ("Diego Moraes", "diego.moraes@facamp.edu.br", "FACAMP", 1, "campinas", "Relações Internacionais"),
+    ("Fernanda Duarte", "fernanda.duarte@facamp.edu.br", "FACAMP", 1, "campinas", "Administração"),
+    # Mais cursos da FACAMP para a copa entre cursos ter disputa
+    ("Gustavo Prado", "gustavo.prado@facamp.edu.br", "FACAMP", 1, "campinas", "Economia"),
+    ("Helena Castro", "helena.castro@facamp.edu.br", "FACAMP", 1, "campinas", "Direito"),
+    ("Igor Batista", "igor.batista@facamp.edu.br", "FACAMP", 1, "campinas", "Relações Internacionais"),
+    ("Juliana Freitas", "juliana.freitas@facamp.edu.br", "FACAMP", 1, "campinas", "Administração"),
+    ("Leonardo Pires", "leonardo.pires@facamp.edu.br", "FACAMP", 1, "campinas", "Economia"),
 ]
+
+LOW_FREQUENCY = {
+    "helena.castro@facamp.edu.br",
+    "igor.batista@facamp.edu.br",
+    "leonardo.pires@facamp.edu.br",
+    "carolina.ribeiro@facamp.edu.br",
+}
 
 # Pesos das faixas de horário dos check-ins (pico de manhã cedo e fim de tarde)
 HOUR_WEIGHTS = [
@@ -153,7 +168,7 @@ def main() -> None:
             return
 
         # Limpeza (ordem respeita as FKs)
-        for model in (CheckIn, Payout, Subscription, Student, University, Gym, Plan, Admin):
+        for model in (Challenge, CheckIn, Payout, Subscription, Student, University, Gym, Plan, Admin):
             db.query(model).delete()
         db.commit()
 
@@ -224,7 +239,7 @@ def main() -> None:
         # --- Estudantes + assinaturas ---
         students: list[Student] = []
         student_password_hash = hash_password(STUDENT_PASSWORD)
-        for i, (name, email, university, plan_tier, city) in enumerate(STUDENTS):
+        for i, (name, email, university, plan_tier, city, course) in enumerate(STUDENTS):
             ies = find_university_for_email(db, email)
             student = Student(
                 name=name,
@@ -234,6 +249,7 @@ def main() -> None:
                 university_id=ies.id if ies else None,
                 photo_url=f"https://i.pravatar.cc/300?img={i + 10}",
                 status="active",
+                course=course,
             )
             student.seed_city = city
             student.home_city = city.capitalize()
@@ -295,7 +311,9 @@ def main() -> None:
                     planned.append((student, pool[k % min(3, len(pool))], ts))
                 continue
 
-            n_checkins = random.randint(10, 17)
+            # Os últimos alunos da FACAMP treinam pouco: a copa de cursos
+            # precisa de turma que não está treinando toda semana
+            n_checkins = random.randint(4, 9) if student.email in LOW_FREQUENCY else random.randint(10, 17)
             # Dias distintos: evita ferir a regra anti-fraude (1 por 3h)
             days_ago = random.sample(range(1, 60), k=n_checkins)
             for d in days_ago:
@@ -372,6 +390,45 @@ def main() -> None:
                 )
 
         db.commit()
+
+        # --- Desafios ---
+        # Entre faculdades no mês corrente (operação), copa entre cursos da
+        # FACAMP (a própria IES) e o desafio do mês passado, já com campeã.
+        facamp = db.scalar(select(University).where(University.name == "FACAMP"))
+        month_end = (first_of_current + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        create_challenge(
+            db,
+            title=f"Desafio de {MONTHS_PT[TODAY.month - 1]}: qual faculdade treina mais?",
+            description="Pontua a média de check-ins por aluno assinante no mês.",
+            scope="universities",
+            metric="checkins_per_student",
+            start_date=first_of_current,
+            end_date=month_end,
+            university_id=None,
+            created_by="admin",
+        )
+        create_challenge(
+            db,
+            title="Copa FACAMP de cursos",
+            description="Vence o curso com a maior parte da turma treinando. Prêmio: happy hour da atlética.",
+            scope="courses",
+            metric="active_share",
+            start_date=TODAY - timedelta(days=20),
+            end_date=TODAY + timedelta(days=10),
+            university_id=facamp.id,
+            created_by="ies",
+        )
+        create_challenge(
+            db,
+            title=f"Desafio de {MONTHS_PT[last_month_end.month - 1]}: qual faculdade treina mais?",
+            description="Pontua a média de check-ins por aluno assinante no mês.",
+            scope="universities",
+            metric="checkins_per_student",
+            start_date=last_month_end.replace(day=1),
+            end_date=last_month_end,
+            university_id=None,
+            created_by="admin",
+        )
 
         # --- Resumo + credenciais de demo ---
         print("Seed concluído com sucesso!")

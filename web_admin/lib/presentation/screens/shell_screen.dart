@@ -33,11 +33,13 @@ class ShellScreen extends ConsumerWidget {
     (path: '/admin/gyms', icon: LucideIcons.dumbbell, label: 'Academias'),
     (path: '/admin/payouts', icon: LucideIcons.receipt, label: 'Repasses'),
     (path: '/admin/students', icon: LucideIcons.users, label: 'Estudantes'),
+    (path: '/admin/desafios', icon: LucideIcons.trophy, label: 'Desafios'),
   ];
 
   static const _universityItems = [
     (path: '/ies/overview', icon: LucideIcons.layoutDashboard, label: 'Visão geral'),
     (path: '/ies/students', icon: LucideIcons.graduationCap, label: 'Alunos'),
+    (path: '/ies/desafios', icon: LucideIcons.trophy, label: 'Desafios'),
   ];
 
   static String? _suffix(PanelSession? session) =>
@@ -149,7 +151,8 @@ class _SidebarContent extends StatelessWidget {
             _NavItem(
               icon: item.icon,
               label: item.label,
-              selected: location == item.path,
+              // Subpáginas (ex.: detalhe do desafio) mantêm o item aceso
+              selected: location == item.path || location.startsWith('${item.path}/'),
               onTap: () => onNavigate(item.path),
             ),
           const Spacer(),

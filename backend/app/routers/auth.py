@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.courses import normalize_course
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import create_access_token, hash_password, verify_password
@@ -38,6 +39,7 @@ def register_student(request: Request, payload: StudentRegister, db: Session = D
         password_hash=hash_password(payload.password),
         university=university.name,
         university_id=university.id,
+        course=normalize_course(payload.course),
     )
     db.add(student)
     db.commit()
