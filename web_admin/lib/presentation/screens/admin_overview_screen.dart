@@ -47,19 +47,26 @@ class AdminOverviewScreen extends ConsumerWidget {
                 detail: 'assinaturas vigentes',
               ),
               MetricBlock(
-                label: 'Receita de assinaturas',
+                label: 'Receita dos alunos',
                 value: formatBRL(o.subscriptionRevenue),
-                detail: 'por mês',
+                detail: 'por mês, já com subsídio',
+              ),
+              MetricBlock(
+                label: 'Receita das IES',
+                value: formatBRL(o.iesRevenue),
+                detail: '${o.activeUniversities} IES: taxa fixa + taxa e subsídio por aluno',
               ),
               MetricBlock(
                 label: 'Repasses do mês',
                 value: formatBRL(o.monthPayoutTotal),
-                detail: '${o.monthCheckins} check-ins',
+                detail: o.monthUnpaidCheckins > 0
+                    ? '${o.monthCheckins} check-ins, ${o.monthUnpaidCheckins} acima do teto'
+                    : '${o.monthCheckins} check-ins',
               ),
               MetricBlock(
                 label: 'Margem estimada',
                 value: formatBRL(o.estimatedMargin),
-                detail: 'assinaturas − repasses',
+                detail: 'alunos + IES − repasses, antes de impostos',
                 highlight: true,
               ),
             ],

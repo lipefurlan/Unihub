@@ -284,10 +284,22 @@ class _MonthDetailState extends ConsumerState<_MonthDetail> {
                         DataCell(Text(c.studentUniversity)),
                         DataCell(Text('${c.planTierAtCheckin}')),
                         DataCell(
-                          Text(
-                            formatBRL(c.payoutAmountRecorded),
-                            style: UniHubStyles.money(size: 14),
-                          ),
+                          c.isPaid
+                              ? Text(
+                                  formatBRL(c.payoutAmountRecorded),
+                                  style: UniHubStyles.money(size: 14),
+                                )
+                              : const Tooltip(
+                                  message:
+                                      'O aluno já passou do teto de visitas pagas do mês',
+                                  child: Text(
+                                    'Não remunerada',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: UniHubColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),

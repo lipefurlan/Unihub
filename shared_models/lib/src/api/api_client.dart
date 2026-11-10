@@ -37,6 +37,15 @@ class ApiClient {
           if (_token != null) options.headers['Authorization'] = 'Bearer $_token';
           handler.next(options);
         },
+        onError: (error, handler) {
+          // Sessão expirou no meio do uso (JWT de 24h): avisa o app para
+          // voltar ao login em vez de deixar as telas em erro
+          final isAuthRoute = error.requestOptions.path.startsWith('/auth/');
+          if (error.response?.statusCode == 401 && _token != null && !isAuthRoute) {
+            onUnauthorized?.call();
+          }
+          handler.next(error);
+        },
       ),
     );
   }
@@ -45,6 +54,9 @@ class ApiClient {
   String? _token;
 
   set token(String? value) => _token = value;
+
+  /// Chamado quando a API responde 401 a uma requisição autenticada.
+  void Function()? onUnauthorized;
   bool get hasToken => _token != null;
 
   Future<T> _run<T>(Future<T> Function() request) async {
@@ -69,19 +81,47 @@ class ApiClient {
     required String name,
     required String email,
     required String password,
-    required String university,
   }) =>
       _run(() async {
+        // A universidade vem do domínio do e-mail (IES conveniada)
         final res = await _dio.post('/auth/register/student', data: {
           'name': name,
           'email': email,
           'password': password,
-          'university': university,
         });
         return AuthResult(
           accessToken: res.data['access_token'] as String,
           role: res.data['role'] as String,
         );
+      });
+
+  /// Login com Google: [credential] é o ID token do botão do Google. No
+  /// primeiro acesso, cria a conta de estudante (e-mail de IES conveniada),
+  /// a menos que [allowSignup] seja false (painel).
+  Future<AuthResult> loginWithGoogle(String credential, {bool allowSignup = true}) =>
+      _run(() async {
+        final res = await _dio.post('/auth/google', data: {
+          'credential': credential,
+          'allow_signup': allowSignup,
+        });
+        return AuthResult(
+          accessToken: res.data['access_token'] as String,
+          role: res.data['role'] as String,
+        );
+      });
+
+  /// Pede o link de redefinição por e-mail; devolve a mensagem da API.
+  Future<String> forgotPassword(String email) => _run(() async {
+        final res = await _dio.post('/auth/forgot-password', data: {'email': email});
+        return res.data['detail'] as String;
+      });
+
+  Future<String> resetPassword(String token, String newPassword) => _run(() async {
+        final res = await _dio.post('/auth/reset-password', data: {
+          'token': token,
+          'new_password': newPassword,
+        });
+        return res.data['detail'] as String;
       });
 
   // ------------------------------------------------------------- estudante

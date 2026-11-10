@@ -93,9 +93,12 @@ class PlatformOverview(BaseModel):
     """Métricas da operação no mês corrente."""
 
     active_students: int
-    subscription_revenue: float  # receita mensal de assinaturas ativas
+    subscription_revenue: float  # o que os alunos pagam por mês (já com subsídio)
+    ies_revenue: float  # o que as IES pagam: taxa fixa + (taxa + subsídio) por aluno
     month_checkins: int
+    month_unpaid_checkins: int  # visitas acima do teto mensal (sem repasse)
     month_payout_total: float  # total devido às academias no mês
-    estimated_margin: float  # receita - repasses
+    estimated_margin: float  # alunos + IES - repasses (antes de impostos e taxas)
     active_gyms: int
+    active_universities: int
     top_gyms: list[TopGym]

@@ -27,30 +27,39 @@ class TopGym {
 
 class PlatformOverview {
   final int activeStudents;
-  final double subscriptionRevenue;
+  final double subscriptionRevenue; // o que os alunos pagam (já com subsídio)
+  final double iesRevenue; // taxa fixa + (taxa + subsídio) por aluno, das IES
   final int monthCheckins;
+  final int monthUnpaidCheckins; // visitas acima do teto mensal, sem repasse
   final double monthPayoutTotal;
   final double estimatedMargin;
   final int activeGyms;
+  final int activeUniversities;
   final List<TopGym> topGyms;
 
   const PlatformOverview({
     required this.activeStudents,
     required this.subscriptionRevenue,
+    required this.iesRevenue,
     required this.monthCheckins,
+    required this.monthUnpaidCheckins,
     required this.monthPayoutTotal,
     required this.estimatedMargin,
     required this.activeGyms,
+    required this.activeUniversities,
     required this.topGyms,
   });
 
   factory PlatformOverview.fromJson(Map<String, dynamic> json) => PlatformOverview(
         activeStudents: json['active_students'] as int,
         subscriptionRevenue: (json['subscription_revenue'] as num).toDouble(),
+        iesRevenue: (json['ies_revenue'] as num? ?? 0).toDouble(),
         monthCheckins: json['month_checkins'] as int,
+        monthUnpaidCheckins: json['month_unpaid_checkins'] as int? ?? 0,
         monthPayoutTotal: (json['month_payout_total'] as num).toDouble(),
         estimatedMargin: (json['estimated_margin'] as num).toDouble(),
         activeGyms: json['active_gyms'] as int,
+        activeUniversities: json['active_universities'] as int? ?? 0,
         topGyms: (json['top_gyms'] as List)
             .map((t) => TopGym.fromJson(t as Map<String, dynamic>))
             .toList(),

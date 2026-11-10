@@ -17,6 +17,8 @@ def get_my_profile(student: Student = Depends(get_current_student)):
     profile = StudentOut.model_validate(student).model_dump()
     subscription = student.active_subscription
     profile["subscription"] = SubscriptionOut.model_validate(subscription) if subscription else None
+    university = student.university_ref
+    profile["university_subsidy"] = float(university.subsidy_per_student) if university else 0
     return profile
 
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.security import get_current_admin, hash_password
-from app.models import Admin, CheckIn, Gym, Payout, Student, Subscription
+from app.models import Admin, CheckIn, Gym, Payout, Student, Subscription, University
 from app.schemas.admin import (
     AdminGymCreate,
     AdminGymRow,
@@ -40,9 +40,24 @@ def get_overview(db: Session = Depends(get_db)):
     start, end = payout_service.month_bounds(current_month)
 
     active_subs = db.scalars(
-        select(Subscription).where(Subscription.status == "active")
+        select(Subscription)
+        .options(joinedload(Subscription.student))
+        .where(Subscription.status == "active")
     ).all()
     subscription_revenue = float(sum((s.amount for s in active_subs), Decimal("0")))
+
+    # Receita das IES: taxa fixa do contrato + (taxa + subsídio) por aluno que assina
+    universities = db.scalars(select(University).where(University.is_active.is_(True))).all()
+    ies_revenue = Decimal("0")
+    for university in universities:
+        subscribers = sum(1 for s in active_subs if s.student.university_id == university.id)
+        ies_revenue += university.monthly_fee + (university.fee_per_student + university.subsidy_per_student) * subscribers
+
+    month_unpaid_checkins = db.scalar(
+        select(func.count(CheckIn.id)).where(
+            CheckIn.timestamp >= start, CheckIn.timestamp < end, CheckIn.is_paid.is_(False)
+        )
+    )
 
     month_checkins, month_payout_total = db.execute(
         select(func.count(CheckIn.id), func.coalesce(func.sum(CheckIn.payout_amount_recorded), 0))
@@ -64,10 +79,13 @@ def get_overview(db: Session = Depends(get_db)):
     return PlatformOverview(
         active_students=len(active_subs),
         subscription_revenue=subscription_revenue,
+        ies_revenue=float(ies_revenue),
         month_checkins=month_checkins,
+        month_unpaid_checkins=month_unpaid_checkins or 0,
         month_payout_total=payout_total,
-        estimated_margin=subscription_revenue - payout_total,
+        estimated_margin=subscription_revenue + float(ies_revenue) - payout_total,
         active_gyms=active_gyms or 0,
+        active_universities=len(universities),
         top_gyms=[TopGym(gym_name=name, checkins=c) for name, c in top_rows],
     )
 

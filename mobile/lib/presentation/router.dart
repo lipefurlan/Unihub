@@ -26,6 +26,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/home',
     refreshListenable: authListenable,
     redirect: (context, state) {
+      // Telas de senha abrem direto, logado ou não (o link vem por e-mail)
+      if ({'/esqueci-senha', '/redefinir-senha'}.contains(state.matchedLocation)) return null;
+
       final auth = authListenable.value;
       if (auth.isLoading) return '/splash';
 
@@ -43,6 +46,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+        path: '/esqueci-senha',
+        builder: (context, state) => ForgotPasswordScreen(
+          api: ref.read(apiClientProvider),
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
+      GoRoute(
+        path: '/redefinir-senha',
+        builder: (context, state) => ResetPasswordScreen(
+          api: ref.read(apiClientProvider),
+          token: state.uri.queryParameters['token'],
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
       GoRoute(
         path: '/gyms/:id',
         builder: (context, state) =>

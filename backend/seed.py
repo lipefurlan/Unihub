@@ -16,35 +16,49 @@ from sqlalchemy import select
 
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription
+from app.core.config import settings
+from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University
+from app.services.university_service import find_university_for_email, student_price
 
 random.seed(42)  # seed fixo: dados reproduzíveis entre execuções
 
 TODAY = date.today()
 
 STUDENT_PASSWORD = "senha123"
+DEMO_STUDENT_EMAIL = "joao.silva@dac.unicamp.br"
 GYM_PASSWORD = "academia123"
 ADMIN_PASSWORD = "admin123"
 
 # ---------------------------------------------------------------------------
-# Planos — tiers crescentes estilo Wellhub, com benefícios cumulativos
+# Modelo de negócio do TCC (plano de negócio, versão revisada)
+# Trocar aqui e rodar o seed de novo para a demo refletir outros números.
 # ---------------------------------------------------------------------------
+PLAN_PRICE = "130.00"  # preço cheio do plano; o aluno paga isso menos o subsídio
+PAYOUT_PER_VISIT = "8.00"  # repasse por check-in (teto de visitas em app/core/config.py)
+IES_MONTHLY_FEE = "3000.00"  # taxa fixa por contrato de IES
+IES_FEE_PER_STUDENT = "15.00"  # taxa por aluno que assina
+IES_SUBSIDY_PER_STUDENT = "10.00"  # subsídio do exemplo do TCC: aluno paga R$ 120
+
+ALL_CATEGORIES = ["musculação", "funcional", "corrida", "pilates", "yoga", "crossfit", "natação", "spinning"]
+
 PLANS = [
     # (tier, preço, cor, categorias incluídas, descrição)
-    (1, "79.90", "#B0B0B0", ["musculação"],
-     "Acesso a academias de musculação parceiras."),
-    (2, "109.90", "#8C8C8C", ["musculação", "funcional", "corrida"],
-     "Benefícios do Plano 1 + treino funcional e grupos de corrida."),
-    (3, "139.90", "#6B6B6B", ["musculação", "funcional", "corrida"],
-     "Benefícios do Plano 2 + 1 plano de treino mensal com assessoria de corrida."),
-    (4, "169.90", "#4A4A4A", ["musculação", "funcional", "corrida", "pilates", "yoga"],
-     "Benefícios do Plano 3 + estúdios de pilates e yoga."),
-    (5, "199.90", "#FF8A5C", ["musculação", "funcional", "corrida", "pilates", "yoga", "crossfit"],
-     "Benefícios do Plano 4 + boxes de crossfit."),
-    (6, "224.90", "#FF5A1F", ["musculação", "funcional", "corrida", "pilates", "yoga", "crossfit", "natação"],
-     "Benefícios do Plano 5 + natação e hidroginástica."),
-    (7, "249.90", "#C8431A", ["musculação", "funcional", "corrida", "pilates", "yoga", "crossfit", "natação", "spinning"],
-     "Acesso total: todas as modalidades e academias parceiras UniHub."),
+    (1, PLAN_PRICE, "#FF5A1F", ALL_CATEGORIES,
+     "Acesso a todas as academias e estúdios parceiros perto do campus e da sua cidade, sem fidelidade."),
+]
+
+# ---------------------------------------------------------------------------
+# IES conveniadas — o domínio do e-mail define quem pode se cadastrar
+# ---------------------------------------------------------------------------
+UNIVERSITIES = [
+    # (nome, domínios de e-mail)
+    ("FACAMP", ["facamp.edu.br"]),
+    ("Unicamp", ["unicamp.br"]),
+    ("PUC-Campinas", ["puccampinas.edu.br"]),
+    ("FATEC Americana", ["fatec.sp.gov.br"]),
+    ("FAM Americana", ["fam.br"]),
+    ("ESAMC Campinas", ["esamc.br"]),
+    ("Mackenzie Campinas", ["mackenzie.br"]),
 ]
 
 # ---------------------------------------------------------------------------
@@ -54,56 +68,56 @@ GYMS = [
     # (nome, email, endereço, lat, lng, modalidades, tier mínimo, repasse, capacidade, horário, cidade)
     ("Academia Campus Fit", "contato@campusfit.com.br",
      "Av. Albino J. B. de Oliveira, 1232 - Barão Geraldo, Campinas/SP",
-     -22.8184, -47.0647, ["musculação", "funcional", "corrida"], 1, "8.00", 180, "06:00–23:00", "campinas"),
+     -22.8184, -47.0647, ["musculação", "funcional", "corrida"], 1, PAYOUT_PER_VISIT, 180, "06:00–23:00", "campinas"),
     ("Iron House Cambuí", "contato@ironhousecambui.com.br",
      "R. Coronel Quirino, 890 - Cambuí, Campinas/SP",
-     -22.8946, -47.0487, ["musculação", "funcional"], 1, "8.50", 150, "06:00–22:00", "campinas"),
+     -22.8946, -47.0487, ["musculação", "funcional"], 1, PAYOUT_PER_VISIT, 150, "06:00–22:00", "campinas"),
     ("Energia Centro", "contato@energiacentro.com.br",
      "R. Barão de Jaguara, 1100 - Centro, Campinas/SP",
-     -22.9056, -47.0608, ["musculação", "spinning"], 2, "10.00", 120, "06:00–22:00", "campinas"),
+     -22.9056, -47.0608, ["musculação", "spinning"], 1, PAYOUT_PER_VISIT, 120, "06:00–22:00", "campinas"),
     ("Runner Lab Cambuí", "contato@runnerlab.com.br",
      "R. Sampainho, 75 - Cambuí, Campinas/SP",
-     -22.8919, -47.0455, ["corrida", "funcional"], 3, "12.00", 60, "05:30–21:00", "campinas"),
+     -22.8919, -47.0455, ["corrida", "funcional"], 1, PAYOUT_PER_VISIT, 60, "05:30–21:00", "campinas"),
     ("Studio Vida Leve Pilates", "contato@vidalevepilates.com.br",
      "R. Maria Monteiro, 410 - Cambuí, Campinas/SP",
-     -22.8902, -47.0521, ["pilates", "yoga"], 4, "15.00", 40, "07:00–21:00", "campinas"),
+     -22.8902, -47.0521, ["pilates", "yoga"], 1, PAYOUT_PER_VISIT, 40, "07:00–21:00", "campinas"),
     ("CrossBox Barão", "contato@crossboxbarao.com.br",
      "R. Roxo Moreira, 1505 - Barão Geraldo, Campinas/SP",
-     -22.8235, -47.0803, ["crossfit", "funcional"], 5, "18.00", 80, "06:00–21:30", "campinas"),
+     -22.8235, -47.0803, ["crossfit", "funcional"], 1, PAYOUT_PER_VISIT, 80, "06:00–21:30", "campinas"),
     ("Aquática Taquaral", "contato@aquaticataquaral.com.br",
      "Av. Heitor Penteado, 320 - Taquaral, Campinas/SP",
-     -22.8758, -47.0531, ["natação", "hidroginástica"], 6, "20.00", 100, "06:00–21:00", "campinas"),
+     -22.8758, -47.0531, ["natação", "hidroginástica"], 1, PAYOUT_PER_VISIT, 100, "06:00–21:00", "campinas"),
     ("Atlética Gym Americana", "contato@atleticagym.com.br",
      "Av. Brasil, 1450 - Centro, Americana/SP",
-     -22.7370, -47.3245, ["musculação", "funcional", "corrida"], 1, "9.00", 160, "06:00–23:00", "americana"),
+     -22.7370, -47.3245, ["musculação", "funcional", "corrida"], 1, PAYOUT_PER_VISIT, 160, "06:00–23:00", "americana"),
     ("Corpo & Mente Pilates", "contato@corpoementeamericana.com.br",
      "R. das Palmeiras, 210 - Jardim Girassol, Americana/SP",
-     -22.7441, -47.3262, ["pilates", "yoga"], 4, "14.00", 35, "07:00–20:30", "americana"),
+     -22.7441, -47.3262, ["pilates", "yoga"], 1, PAYOUT_PER_VISIT, 35, "07:00–20:30", "americana"),
     ("Box Funcional Americana", "contato@boxfuncional.com.br",
      "R. Sete de Setembro, 677 - Centro, Americana/SP",
-     -22.7392, -47.3313, ["crossfit", "funcional"], 5, "16.50", 70, "06:00–21:00", "americana"),
+     -22.7392, -47.3313, ["crossfit", "funcional"], 1, PAYOUT_PER_VISIT, 70, "06:00–21:00", "americana"),
 ]
 
 # ---------------------------------------------------------------------------
 # Estudantes — universidades da região; João Silva é a credencial de demo
 # ---------------------------------------------------------------------------
 STUDENTS = [
-    # (nome, email, universidade, tier do plano, cidade)
-    ("João Silva", "joao.silva@dac.unicamp.br", "Unicamp", 3, "campinas"),
-    ("Mariana Costa", "mariana.costa@puccampinas.edu.br", "PUC-Campinas", 5, "campinas"),
+    # (nome, email, universidade, tier do plano, cidade) — todos no plano único
+    ("João Silva", "joao.silva@dac.unicamp.br", "Unicamp", 1, "campinas"),
+    ("Mariana Costa", "mariana.costa@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
     ("Pedro Almeida", "pedro.almeida@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Ana Beatriz Rocha", "ana.rocha@facamp.edu.br", "FACAMP", 4, "campinas"),
-    ("Lucas Ferreira", "lucas.ferreira@dac.unicamp.br", "Unicamp", 7, "campinas"),
-    ("Camila Souza", "camila.souza@puccampinas.edu.br", "PUC-Campinas", 2, "campinas"),
-    ("Rafael Oliveira", "rafael.oliveira@fatec.sp.gov.br", "FATEC Americana", 5, "americana"),
+    ("Ana Beatriz Rocha", "ana.rocha@facamp.edu.br", "FACAMP", 1, "campinas"),
+    ("Lucas Ferreira", "lucas.ferreira@dac.unicamp.br", "Unicamp", 1, "campinas"),
+    ("Camila Souza", "camila.souza@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
+    ("Rafael Oliveira", "rafael.oliveira@fatec.sp.gov.br", "FATEC Americana", 1, "americana"),
     ("Júlia Mendes", "julia.mendes@fam.br", "FAM Americana", 1, "americana"),
-    ("Gabriel Santos", "gabriel.santos@dac.unicamp.br", "Unicamp", 6, "campinas"),
-    ("Larissa Lima", "larissa.lima@esamc.br", "ESAMC Campinas", 3, "campinas"),
-    ("Thiago Carvalho", "thiago.carvalho@mackenzie.br", "Mackenzie Campinas", 2, "campinas"),
-    ("Isabela Martins", "isabela.martins@puccampinas.edu.br", "PUC-Campinas", 4, "campinas"),
-    ("Matheus Pereira", "matheus.pereira@fatec.sp.gov.br", "FATEC Americana", 7, "americana"),
+    ("Gabriel Santos", "gabriel.santos@dac.unicamp.br", "Unicamp", 1, "campinas"),
+    ("Larissa Lima", "larissa.lima@esamc.br", "ESAMC Campinas", 1, "campinas"),
+    ("Thiago Carvalho", "thiago.carvalho@mackenzie.br", "Mackenzie Campinas", 1, "campinas"),
+    ("Isabela Martins", "isabela.martins@puccampinas.edu.br", "PUC-Campinas", 1, "campinas"),
+    ("Matheus Pereira", "matheus.pereira@fatec.sp.gov.br", "FATEC Americana", 1, "americana"),
     ("Beatriz Nunes", "beatriz.nunes@dac.unicamp.br", "Unicamp", 1, "campinas"),
-    ("Vinícius Araújo", "vinicius.araujo@fam.br", "FAM Americana", 2, "americana"),
+    ("Vinícius Araújo", "vinicius.araujo@fam.br", "FAM Americana", 1, "americana"),
 ]
 
 # Pesos das faixas de horário dos check-ins (pico de manhã cedo e fim de tarde)
@@ -132,7 +146,7 @@ def main() -> None:
             return
 
         # Limpeza (ordem respeita as FKs)
-        for model in (CheckIn, Payout, Subscription, Student, Gym, Plan, Admin):
+        for model in (CheckIn, Payout, Subscription, Student, University, Gym, Plan, Admin):
             db.query(model).delete()
         db.commit()
 
@@ -145,17 +159,30 @@ def main() -> None:
             )
         )
 
+        # --- IES conveniadas ---
+        for name, domains in UNIVERSITIES:
+            db.add(
+                University(
+                    name=name,
+                    email_domains=domains,
+                    monthly_fee=Decimal(IES_MONTHLY_FEE),
+                    fee_per_student=Decimal(IES_FEE_PER_STUDENT),
+                    subsidy_per_student=Decimal(IES_SUBSIDY_PER_STUDENT),
+                )
+            )
+        db.flush()
+
         # --- Planos ---
         plans: dict[int, Plan] = {}
         for tier, price, color, categories, description in PLANS:
             plan = Plan(
-                name=f"Plano {tier}",
+                name="Plano UniHub",
                 monthly_price=Decimal(price),
                 tier=tier,
                 color=color,
                 included_categories=categories,
                 benefits_description=description,
-                has_running_coach=tier >= 3,  # Plano 3+ inclui assessoria de corrida
+                has_running_coach=False,
             )
             db.add(plan)
             plans[tier] = plan
@@ -188,11 +215,13 @@ def main() -> None:
         students: list[Student] = []
         student_password_hash = hash_password(STUDENT_PASSWORD)
         for i, (name, email, university, plan_tier, city) in enumerate(STUDENTS):
+            ies = find_university_for_email(db, email)
             student = Student(
                 name=name,
                 email=email,
                 password_hash=student_password_hash,
-                university=university,
+                university=ies.name if ies else university,
+                university_id=ies.id if ies else None,
                 photo_url=f"https://i.pravatar.cc/300?img={i + 10}",
                 status="active",
             )
@@ -215,20 +244,36 @@ def main() -> None:
                     plan_id=plan.id,
                     start_date=start,
                     renewal_date=renewal,
-                    amount=plan.monthly_price,
+                    amount=student_price(plan.monthly_price, student.university_ref),
                     status="active",
                 )
             )
 
         # --- Check-ins (~200 nos últimos 2 meses) ---
         # Cada aluno frequenta majoritariamente 2 academias "favoritas" da sua
-        # cidade (coerência geográfica), respeitando o tier do plano.
-        total_checkins = 0
+        # cidade (coerência geográfica).
+        now = datetime.now()
+        month_start = datetime.combine(TODAY.replace(day=1), datetime.min.time())
+        planned: list[tuple[Student, Gym, datetime]] = []
         for student in students:
             accessible = [g for g in gyms if g.min_plan_tier <= student.plan_tier]
             local = [g for g in accessible if g.city == student.city]
             pool = local or accessible
             favorites = random.sample(pool, k=min(2, len(pool)))
+
+            if student.email == DEMO_STUDENT_EMAIL:
+                # João chega à demo com 9 visitas pagas no mês: o próximo
+                # check-in é o 10º (pago) e o seguinte já passa do teto.
+                for d in random.sample(range(32, 60), k=8):
+                    ts = datetime.combine(TODAY - timedelta(days=d), datetime.min.time()).replace(
+                        hour=pick_hour(), minute=random.randint(0, 59)
+                    )
+                    planned.append((student, random.choice(favorites), ts))
+                step = (now - timedelta(hours=1) - month_start) / 9
+                for k in range(9):
+                    # Alterna entre 3 academias para respeitar o anti-fraude de 3h
+                    planned.append((student, pool[k % min(3, len(pool))], month_start + step * k))
+                continue
 
             n_checkins = random.randint(10, 17)
             # Dias distintos: evita ferir a regra anti-fraude (1 por 3h)
@@ -238,16 +283,27 @@ def main() -> None:
                 ts = datetime.combine(TODAY - timedelta(days=d), datetime.min.time()).replace(
                     hour=pick_hour(), minute=random.randint(0, 59)
                 )
-                db.add(
-                    CheckIn(
-                        student_id=student.id,
-                        gym_id=gym.id,
-                        timestamp=ts,
-                        plan_tier_at_checkin=student.plan_tier,
-                        payout_amount_recorded=gym.checkin_payout_amount,
-                    )
+                planned.append((student, gym, ts))
+
+        # Aplica o teto de visitas pagas por aluno no mês, em ordem cronológica
+        paid_per_student_month: dict[tuple[int, str], int] = {}
+        total_checkins = 0
+        for student, gym, ts in sorted(planned, key=lambda item: item[2]):
+            key = (student.id, ts.strftime("%Y-%m"))
+            is_paid = paid_per_student_month.get(key, 0) < settings.max_paid_checkins_per_month
+            if is_paid:
+                paid_per_student_month[key] = paid_per_student_month.get(key, 0) + 1
+            db.add(
+                CheckIn(
+                    student_id=student.id,
+                    gym_id=gym.id,
+                    timestamp=ts,
+                    plan_tier_at_checkin=student.plan_tier,
+                    payout_amount_recorded=gym.checkin_payout_amount if is_paid else Decimal("0"),
+                    is_paid=is_paid,
                 )
-                total_checkins += 1
+            )
+            total_checkins += 1
 
         db.flush()
 
@@ -290,18 +346,19 @@ def main() -> None:
 
         # --- Resumo + credenciais de demo ---
         print("Seed concluído com sucesso!")
+        print(f"  IES:         {len(UNIVERSITIES)}")
         print(f"  Planos:      {len(PLANS)}")
         print(f"  Academias:   {len(GYMS)}")
         print(f"  Estudantes:  {len(STUDENTS)}")
         print(f"  Check-ins:   {total_checkins}")
         print()
         print("Credenciais de teste:")
-        print(f"  Estudante (Plano 3): joao.silva@dac.unicamp.br / {STUDENT_PASSWORD}")
+        print(f"  Estudante (Unicamp): {DEMO_STUDENT_EMAIL} / {STUDENT_PASSWORD}")
         print(f"  Academia (Campus Fit): contato@campusfit.com.br / {GYM_PASSWORD}")
         print(f"  Admin (Operação UniHub): admin@unihub.com.br / {ADMIN_PASSWORD}")
         print()
-        print("Dica de demo: o CrossBox Barão exige Plano 5 — o João (Plano 3)")
-        print("verá o bloqueio de check-in por tier insuficiente.")
+        print("Dica de demo: o João já tem 9 visitas pagas no mês. O 10º check-in é pago;")
+        print(f"a partir do 11º a academia vê a visita como não remunerada (teto de {settings.max_paid_checkins_per_month}).")
     finally:
         db.close()
 

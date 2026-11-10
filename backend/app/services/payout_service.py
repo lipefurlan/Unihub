@@ -79,6 +79,7 @@ def month_checkins(db: Session, gym_id: int, reference_month: str) -> list[dict]
             "student_university": c.student.university,
             "plan_tier_at_checkin": c.plan_tier_at_checkin,
             "payout_amount_recorded": float(c.payout_amount_recorded),
+            "is_paid": c.is_paid,
         }
         for c in checkins
     ]

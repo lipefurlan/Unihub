@@ -4,6 +4,8 @@ library;
 
 export 'src/api/api_client.dart';
 export 'src/api/api_exception.dart';
+export 'src/auth/google_login_button.dart';
+export 'src/auth/password_screens.dart';
 export 'src/models/admin.dart';
 export 'src/models/checkin.dart';
 export 'src/models/dashboard.dart';

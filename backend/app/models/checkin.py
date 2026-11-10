@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -20,6 +20,10 @@ class CheckIn(Base):
     # O repasse mensal é a soma destes valores — mudanças futuras no valor
     # da academia não afetam check-ins já registrados.
     payout_amount_recorded: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Visita remunerada? Só as primeiras visitas do aluno no mês (teto
+    # MAX_PAID_CHECKINS_PER_MONTH, somando todas as academias) geram repasse;
+    # as seguintes entram com repasse zero e is_paid = False.
+    is_paid: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
 
     student: Mapped["Student"] = relationship(back_populates="checkins")  # noqa: F821
     gym: Mapped["Gym"] = relationship(back_populates="checkins")  # noqa: F821

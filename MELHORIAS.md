@@ -4,14 +4,18 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 
 ## Autenticação e contas
 
-- [ ] **Login com Google (OAuth)** — entrar no app/painel com a conta Google, sem criar senha.
+- [x] **Login com Google (OAuth)** — feito: botão do Google no app e no painel (versão web),
+  `POST /auth/google` valida o ID token. Configuração em DEPLOY.md.
   Caminho: Google Cloud Console (OAuth Client ID) + `google_sign_in` no Flutter + endpoint
   `POST /auth/google` no backend validando o token e criando/vinculando a conta.
-- [ ] **"Esqueci minha senha"** — fluxo por e-mail com link/código de redefinição
+- [x] **"Esqueci minha senha"** — feito: link por e-mail (Resend), válido por 60 min e de uso único.
+  Antes: fluxo por e-mail com link/código de redefinição
   (exige um serviço de envio de e-mail, ex.: Resend/SendGrid, com domínio felipefurlan.com.br).
 - [ ] **Redefinição de senha pelo admin** — botão no painel (Estudantes/Academias) que gera uma
   senha temporária, para suporte manual enquanto não há fluxo por e-mail.
-- [ ] **E-mail universitário verificado** — allowlist de domínios por universidade
+- [x] **Allowlist de domínios por IES conveniada** — feito (tabela `universities`). Falta o
+  código de verificação por e-mail no cadastro com senha.
+  Antes: allowlist de domínios por universidade
   (ex.: dac.unicamp.br, puccampinas.edu.br) gerenciada pelo admin + código de
   verificação enviado por e-mail. Garante que só estudante real assina o plano.
 - [x] **Rate limiting no login** — feito (slowapi): 10 tentativas/min no login e
@@ -42,8 +46,8 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 
 ## Qualidade (valor de TCC)
 
-- [ ] **Testes automatizados no backend (pytest)** — regras de tier, anti-fraude e cálculo
-  de repasse cobertas por testes.
+- [x] **Testes automatizados no backend (pytest)** — começados: auth, IES conveniada, subsídio e
+  teto de visitas pagas (`backend/tests`). Faltam tier e anti-fraude.
 - [ ] **CI no GitHub Actions** — a cada push: testes do backend + `flutter analyze` dos
   três projetos.
 
@@ -52,7 +56,7 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [ ] Fotos das academias em storage permanente (Cloudflare R2/S3) — hoje o disco do Railway
   é efêmero e as fotos enviadas pelo admin se perdem em redeploy.
 - [ ] Pagamentos reais das assinaturas (PIX/cartão — ex.: Mercado Pago, Stripe, Asaas).
-- [ ] Título das abas dos sites web ("UniHub" no lugar de "unihub_mobile"/"unihub_web_admin").
+- [x] Título das abas e nome ao instalar no celular ("UniHub" / "UniHub Painel").
 - [ ] Monitoramento e alertas de erro (ex.: Sentry) + backups automáticos do PostgreSQL.
 - [ ] Termos de uso e política de privacidade (LGPD) — obrigatórios para as lojas.
 

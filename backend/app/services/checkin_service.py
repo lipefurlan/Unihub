@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -17,6 +17,9 @@ def create_checkin(db: Session, student: Student, gym_id: int) -> CheckIn:
     3. Anti-fraude: no máximo 1 check-in por aluno/academia dentro da janela
        configurada (default 3h).
     4. O valor de repasse da academia é congelado (snapshot) no check-in.
+    5. Teto de visitas pagas: só as primeiras N visitas do aluno no mês
+       (somando todas as academias) geram repasse. Da N+1ª em diante o
+       check-in é aceito, mas registrado como não remunerado.
     """
     gym = db.get(Gym, gym_id)
     if gym is None:
@@ -60,12 +63,24 @@ def create_checkin(db: Session, student: Student, gym_id: int) -> CheckIn:
             detail=f"Você já fez check-in nesta academia nas últimas {window_hours} horas.",
         )
 
+    now = datetime.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    paid_this_month = db.scalar(
+        select(func.count(CheckIn.id)).where(
+            CheckIn.student_id == student.id,
+            CheckIn.timestamp >= month_start,
+            CheckIn.is_paid.is_(True),
+        )
+    )
+    is_paid = paid_this_month < settings.max_paid_checkins_per_month
+
     checkin = CheckIn(
         student_id=student.id,
         gym_id=gym.id,
-        timestamp=datetime.now(),
+        timestamp=now,
         plan_tier_at_checkin=subscription.plan.tier,
-        payout_amount_recorded=gym.checkin_payout_amount,
+        payout_amount_recorded=gym.checkin_payout_amount if is_paid else 0,
+        is_paid=is_paid,
     )
     db.add(checkin)
     db.commit()

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_models/shared_models.dart';
 
 import '../data/panel_auth_repository.dart';
 import 'providers.dart';
@@ -30,11 +31,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/dashboard',
     refreshListenable: authListenable,
     redirect: (context, state) {
+      final location = state.matchedLocation;
+      // Telas de senha abrem direto, logado ou não (o link vem por e-mail)
+      if ({'/esqueci-senha', '/redefinir-senha'}.contains(location)) return null;
+
       final auth = authListenable.value;
       if (auth.isLoading) return '/splash';
 
       final session = auth.value;
-      final location = state.matchedLocation;
       final onAuthScreen = {'/login', '/splash'}.contains(location);
 
       if (session == null) return onAuthScreen ? null : '/login';
@@ -53,6 +57,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/esqueci-senha',
+        builder: (context, state) => ForgotPasswordScreen(
+          api: ref.read(apiClientProvider),
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
+      GoRoute(
+        path: '/redefinir-senha',
+        builder: (context, state) => ResetPasswordScreen(
+          api: ref.read(apiClientProvider),
+          token: state.uri.queryParameters['token'],
+          onBackToLogin: () => context.go('/login'),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             ShellScreen(location: state.matchedLocation, child: child),

@@ -34,8 +34,13 @@ class PanelAuthRepository {
     return _fetchProfile(role);
   }
 
-  Future<PanelSession> login(String email, String password) async {
-    final result = await _api.login(email, password);
+  Future<PanelSession> login(String email, String password) async =>
+      _startSession(await _api.login(email, password));
+
+  Future<PanelSession> loginWithGoogle(String credential) async =>
+      _startSession(await _api.loginWithGoogle(credential, allowSignup: false));
+
+  Future<PanelSession> _startSession(AuthResult result) async {
     if (result.role == 'student') {
       throw const ApiException('Esta conta é de estudante. Use o app UniHub.');
     }
