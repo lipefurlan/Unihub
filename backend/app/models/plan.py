@@ -18,3 +18,5 @@ class Plan(Base):
     benefits_description: Mapped[str] = mapped_column(Text, default="")
     # Plano 3+: inclui 1 plano de treino mensal de assessoria de corrida
     has_running_coach: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Plano desativado some da vitrine do app; quem já assina continua nele
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")

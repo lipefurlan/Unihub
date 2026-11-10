@@ -323,6 +323,21 @@ class ApiClient {
         return PlatformOverview.fromJson(res.data as Map<String, dynamic>);
       });
 
+  Future<List<AdminPlan>> getAdminPlans() => _run(() async {
+        final res = await _dio.get('/admin/plans');
+        return (res.data as List).map((p) => AdminPlan.fromJson(p as Map<String, dynamic>)).toList();
+      });
+
+  Future<AdminPlan> createPlan(Map<String, dynamic> data) => _run(() async {
+        final res = await _dio.post('/admin/plans', data: data);
+        return AdminPlan.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<AdminPlan> updatePlan(int id, Map<String, dynamic> data) => _run(() async {
+        final res = await _dio.put('/admin/plans/$id', data: data);
+        return AdminPlan.fromJson(res.data as Map<String, dynamic>);
+      });
+
   Future<List<AdminGym>> getAdminGyms() => _run(() async {
         final res = await _dio.get('/admin/gyms');
         return (res.data as List).map((g) => AdminGym.fromJson(g as Map<String, dynamic>)).toList();

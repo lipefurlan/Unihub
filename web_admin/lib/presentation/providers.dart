@@ -91,6 +91,10 @@ final adminOverviewProvider = FutureProvider<PlatformOverview>(
   (ref) => ref.watch(apiClientProvider).getAdminOverview(),
 );
 
+final adminPlansProvider = FutureProvider<List<AdminPlan>>(
+  (ref) => ref.watch(apiClientProvider).getAdminPlans(),
+);
+
 final adminGymsProvider = FutureProvider<List<AdminGym>>(
   (ref) => ref.watch(apiClientProvider).getAdminGyms(),
 );

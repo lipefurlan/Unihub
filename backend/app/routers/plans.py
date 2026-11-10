@@ -11,4 +11,4 @@ router = APIRouter(prefix="/plans", tags=["Planos"])
 
 @router.get("", response_model=list[PlanOut])
 def list_plans(db: Session = Depends(get_db)):
-    return db.scalars(select(Plan).order_by(Plan.tier)).all()
+    return db.scalars(select(Plan).where(Plan.is_active.is_(True)).order_by(Plan.tier)).all()

@@ -4,10 +4,13 @@ import 'package:shared_models/shared_models.dart';
 /// Logo do painel: a marca oficial do UniHub, com um rótulo opcional ao
 /// lado ("painel", "operação", nome da faculdade...).
 class UniHubWordmark extends StatelessWidget {
-  const UniHubWordmark({super.key, this.size = 20, this.suffix});
+  const UniHubWordmark({super.key, this.size = 20, this.suffix, this.onDark = false});
 
   final double size;
   final String? suffix;
+
+  /// Fundo escuro (menu da operação): nome em branco.
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +18,7 @@ class UniHubWordmark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        UniHubLogo(height: size),
+        UniHubLogo(height: size, onDark: onDark),
         if (suffix != null) ...[
           SizedBox(width: size * 0.5),
           Flexible(
@@ -25,7 +28,7 @@ class UniHubWordmark extends StatelessWidget {
               style: TextStyle(
                 fontSize: size * 0.65,
                 fontWeight: FontWeight.w500,
-                color: UniHubColors.textSecondary,
+                color: onDark ? UniHubColors.accentSoft : UniHubColors.textSecondary,
               ),
             ),
           ),

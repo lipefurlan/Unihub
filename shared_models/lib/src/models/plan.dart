@@ -7,6 +7,7 @@ class Plan {
   final List<String> includedCategories;
   final String benefitsDescription;
   final bool hasRunningCoach;
+  final bool isActive;
 
   const Plan({
     required this.id,
@@ -17,6 +18,7 @@ class Plan {
     required this.includedCategories,
     required this.benefitsDescription,
     required this.hasRunningCoach,
+    this.isActive = true,
   });
 
   factory Plan.fromJson(Map<String, dynamic> json) => Plan(
@@ -28,5 +30,19 @@ class Plan {
         includedCategories: (json['included_categories'] as List).cast<String>(),
         benefitsDescription: json['benefits_description'] as String,
         hasRunningCoach: json['has_running_coach'] as bool,
+        isActive: json['is_active'] as bool? ?? true,
+      );
+}
+
+/// Plano visto pela operação UniHub, com o número de assinantes ativos.
+class AdminPlan {
+  final Plan plan;
+  final int activeSubscribers;
+
+  const AdminPlan({required this.plan, required this.activeSubscribers});
+
+  factory AdminPlan.fromJson(Map<String, dynamic> json) => AdminPlan(
+        plan: Plan.fromJson(json),
+        activeSubscribers: json['active_subscribers'] as int? ?? 0,
       );
 }
