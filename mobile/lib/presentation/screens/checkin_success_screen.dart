@@ -23,7 +23,18 @@ class CheckinSuccessScreen extends StatelessWidget {
                 tween: Tween(begin: 0, end: 1),
                 duration: const Duration(milliseconds: 900),
                 curve: Curves.easeOutBack,
-                builder: (_, meet, _) => UniHubSymbol(height: 52, meet: meet),
+                builder: (_, meet, _) => Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Eco em traço fino do símbolo, por trás do cheio
+                    Opacity(
+                      opacity: meet.clamp(0, 1),
+                      child: const SymbolOutline(
+                          height: 120, color: UniHubColors.accent, opacity: 0.35, strokeWidth: 1),
+                    ),
+                    UniHubSymbol(height: 52, meet: meet),
+                  ],
+                ),
               ),
               const SizedBox(height: UniHubSpacing.x5),
               const BrandLabel('Bom treino'),

@@ -200,6 +200,7 @@ class _AchievementsSection extends StatelessWidget {
         const SizedBox(height: UniHubSpacing.x5),
         // Laranja chapado com textura de papel (o manual não usa degradê)
         BrandBlock(
+          outline: const Positioned(right: -40, top: -50, child: SymbolOutline(height: 170)),
           child: Row(
             children: [
               Expanded(

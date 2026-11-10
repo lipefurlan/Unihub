@@ -18,6 +18,7 @@ class UniHubSymbol extends StatelessWidget {
     this.left = UniHubColors.accent,
     this.right = UniHubColors.textPrimary,
     this.meet = 1,
+    this.strokeWidth,
   });
 
   /// Largura/altura do símbolo na posição final (medida do manual).
@@ -28,22 +29,29 @@ class UniHubSymbol extends StatelessWidget {
   final Color right;
   final double meet;
 
+  /// Com valor, desenha só o contorno dos crescentes (versão vazada, em
+  /// traço fino), para usar como grafismo decorativo.
+  final double? strokeWidth;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
       width: height * aspectRatio,
-      child: CustomPaint(painter: _SymbolPainter(left: left, right: right, meet: meet)),
+      child: CustomPaint(
+        painter: _SymbolPainter(left: left, right: right, meet: meet, strokeWidth: strokeWidth),
+      ),
     );
   }
 }
 
 class _SymbolPainter extends CustomPainter {
-  _SymbolPainter({required this.left, required this.right, required this.meet});
+  _SymbolPainter({required this.left, required this.right, required this.meet, this.strokeWidth});
 
   final Color left;
   final Color right;
   final double meet;
+  final double? strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -57,13 +65,55 @@ class _SymbolPainter extends CustomPainter {
     final b = Rect.fromCircle(center: Offset(mid + gap / 2, cy), radius: r);
     final pa = Path()..addOval(a);
     final pb = Path()..addOval(b);
-    canvas.drawPath(Path.combine(PathOperation.difference, pa, pb), Paint()..color = left);
-    canvas.drawPath(Path.combine(PathOperation.difference, pb, pa), Paint()..color = right);
+    Paint paint(Color c) {
+      final p = Paint()
+        ..color = c
+        ..isAntiAlias = true;
+      if (strokeWidth != null) {
+        p
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth!
+          ..strokeJoin = StrokeJoin.round;
+      }
+      return p;
+    }
+
+    canvas.drawPath(Path.combine(PathOperation.difference, pa, pb), paint(left));
+    canvas.drawPath(Path.combine(PathOperation.difference, pb, pa), paint(right));
   }
 
   @override
   bool shouldRepaint(_SymbolPainter old) =>
-      old.meet != meet || old.left != left || old.right != right;
+      old.meet != meet ||
+      old.left != left ||
+      old.right != right ||
+      old.strokeWidth != strokeWidth;
+}
+
+/// Símbolo vazado, grande e cortado pela borda: só o contorno em traço fino,
+/// numa cor só, como marca d'água decorativa dentro de blocos de cor.
+/// Posicione com [Positioned] num [Stack] com o bloco recortado (ClipRRect).
+class SymbolOutline extends StatelessWidget {
+  const SymbolOutline({
+    super.key,
+    this.height = 220,
+    this.color = Colors.white,
+    this.opacity = 0.38,
+    this.strokeWidth = 1.2,
+  });
+
+  final double height;
+  final Color color;
+  final double opacity;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color.withValues(alpha: opacity);
+    return IgnorePointer(
+      child: UniHubSymbol(height: height, left: c, right: c, strokeWidth: strokeWidth),
+    );
+  }
 }
 
 /// Cortina de meias-luas do manual: fileira de meias-luas alternadas, sempre
@@ -207,7 +257,11 @@ class BrandBlock extends StatelessWidget {
     this.padding = const EdgeInsets.all(UniHubSpacing.x5),
     this.footer,
     this.lift = false,
+    this.outline,
   });
+
+  /// Símbolo vazado de fundo (ex.: Positioned(right: -60, top: -30, child: SymbolOutline())).
+  final Widget? outline;
 
   final Widget child;
   final Color color;
@@ -241,6 +295,7 @@ class BrandBlock extends StatelessWidget {
           child: Stack(
             children: [
               const Positioned.fill(child: PaperGrain()),
+              ?outline,
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,

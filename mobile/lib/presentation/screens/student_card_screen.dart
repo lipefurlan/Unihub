@@ -43,6 +43,11 @@ class StudentCardScreen extends ConsumerWidget {
                   child: Stack(
                     children: [
                       const Positioned.fill(child: PaperGrain(opacity: 0.07)),
+                      const Positioned(
+                        left: 90,
+                        bottom: -90,
+                        child: SymbolOutline(height: 230, opacity: 0.32),
+                      ),
                       // Cortina encostada na lateral direita, longe do logo
                       const Positioned(
                         right: 0,

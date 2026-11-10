@@ -149,6 +149,7 @@ class _PlanSection extends ConsumerWidget {
     if (subscription == null) {
       // Estudante recém-cadastrado: precisa escolher um plano
       return BrandBlock(
+        outline: const Positioned(right: -70, top: -40, child: SymbolOutline(height: 190)),
         footer: const HalfMoonCurtain(radius: 10, onOrange: true),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,6 +174,7 @@ class _PlanSection extends ConsumerWidget {
     final plan = subscription.plan;
     final paused = subscription.status == 'paused';
     return BrandBlock(
+      outline: const Positioned(right: -70, top: -40, child: SymbolOutline(height: 190)),
       // Pausado: bloco preto café, sem o laranja de "vamos treinar"
       color: paused ? UniHubColors.textPrimary : UniHubColors.accent,
       footer: HalfMoonCurtain(radius: 10, onOrange: !paused),

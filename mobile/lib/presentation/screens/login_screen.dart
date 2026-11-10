@@ -166,6 +166,9 @@ class _LoginHero extends StatelessWidget {
       child: Stack(
         children: [
           const Positioned.fill(child: PaperGrain()),
+          // Símbolo vazado gigante saindo pelos cantos, longe do logo
+          const Positioned(left: -150, top: -120, child: SymbolOutline(height: 300, opacity: 0.30)),
+          const Positioned(right: -170, bottom: 10, child: SymbolOutline(height: 260, opacity: 0.30)),
           SafeArea(
             bottom: false,
             child: Column(
