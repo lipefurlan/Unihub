@@ -8,7 +8,7 @@ class UniHubLogo extends StatelessWidget {
   const UniHubLogo({super.key, this.height = 22, this.semanticLabel = 'UniHub'});
 
   /// Proporção largura/altura do arquivo unihub-logo-cor.png.
-  static const aspectRatio = 2400 / 418;
+  static const aspectRatio = 2400 / 429;
 
   final double height;
   final String semanticLabel;
