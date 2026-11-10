@@ -35,12 +35,14 @@ class AuthRepository {
     required String name,
     required String email,
     required String password,
+    String? phone,
     String? course,
   }) async {
     final result = await _api.registerStudent(
       name: name,
       email: email,
       password: password,
+      phone: phone,
       course: course,
     );
     _api.token = result.accessToken;

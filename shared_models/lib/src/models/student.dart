@@ -13,6 +13,10 @@ class Student {
   final int weeklyGoal; // meta de treinos por semana
   final String? homeCity; // cidade natal (fins de semana e férias)
   final String? course; // disputa os desafios entre cursos da faculdade
+  final String? institutionalEmail; // e-mail da faculdade (prova o vínculo)
+  final bool emailVerified; // confirmou o e-mail pessoal por código
+  final bool institutionalEmailVerified; // confirmou o e-mail da faculdade
+  final String? phone; // celular com WhatsApp (só dígitos, com DDI)
 
   const Student({
     required this.id,
@@ -26,7 +30,18 @@ class Student {
     this.weeklyGoal = 3,
     this.homeCity,
     this.course,
+    this.institutionalEmail,
+    this.emailVerified = true,
+    this.institutionalEmailVerified = true,
+    this.phone,
   });
+
+  /// Só assina plano quem confirmou os dois e-mails.
+  bool get isVerified => emailVerified && institutionalEmailVerified;
+
+  /// Pessoal e institucional são o mesmo endereço (ex.: entrou pelo Google
+  /// com o e-mail da faculdade): basta um código.
+  bool get singleEmail => institutionalEmail == null || institutionalEmail == email;
 
   /// Tier do plano vigente (0 = sem assinatura).
   int get planTier => subscription?.plan.tier ?? 0;
@@ -49,6 +64,10 @@ class Student {
         weeklyGoal: json['weekly_goal'] as int? ?? 3,
         homeCity: json['home_city'] as String?,
         course: json['course'] as String?,
+        institutionalEmail: json['institutional_email'] as String?,
+        emailVerified: json['email_verified'] as bool? ?? true,
+        institutionalEmailVerified: json['institutional_email_verified'] as bool? ?? true,
+        phone: json['phone'] as String?,
       );
 }
 

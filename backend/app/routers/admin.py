@@ -4,12 +4,12 @@ from decimal import Decimal
 from pathlib import Path as FilePath
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.security import get_current_admin, hash_password
-from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University
+from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University, UniversityRosterEntry
 from app.schemas.admin import (
     AdminGymCreate,
     AdminGymRow,
@@ -17,12 +17,15 @@ from app.schemas.admin import (
     AdminOut,
     AdminPayoutRow,
     AdminStudentRow,
+    AdminUniversityRow,
     PlatformOverview,
+    RosterEntryOut,
+    RosterImportOut,
     TemporaryPasswordOut,
     TopGym,
 )
 from app.schemas.plan import AdminPlanCreate, AdminPlanRow, AdminPlanUpdate
-from app.services import payout_service
+from app.services import payout_service, roster_service
 
 router = APIRouter(prefix="/admin", tags=["Operação UniHub"], dependencies=[Depends(get_current_admin)])
 
@@ -295,6 +298,8 @@ def list_students(db: Session = Depends(get_db)):
                 plan_name=sub.plan.name if sub else None,
                 subscription_status=sub.status if sub else None,
                 total_checkins=checkin_counts.get(s.id, 0),
+                institutional_email=s.institutional_email,
+                verified=s.is_verified,
             )
         )
     return rows
@@ -418,3 +423,103 @@ def update_plan(plan_id: int, payload: AdminPlanUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(plan)
     return _plan_row(db, plan)
+
+
+# --- Faculdades: lista oficial de alunos (CSV enviado pela IES) ---
+
+def _university_or_404(db: Session, university_id: int) -> University:
+    university = db.get(University, university_id)
+    if university is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculdade não encontrada.")
+    return university
+
+
+def _university_row(db: Session, university: University) -> AdminUniversityRow:
+    students = db.scalars(select(Student).where(Student.university_id == university.id)).all()
+    roster_emails = set(
+        db.scalars(
+            select(UniversityRosterEntry.email).where(UniversityRosterEntry.university_id == university.id)
+        ).all()
+    )
+    imported_at = db.scalar(
+        select(func.max(UniversityRosterEntry.imported_at)).where(UniversityRosterEntry.university_id == university.id)
+    )
+    in_roster = sum(1 for s in students if (s.institutional_email or s.email) in roster_emails)
+    return AdminUniversityRow(
+        id=university.id,
+        name=university.name,
+        email_domains=list(university.email_domains or []),
+        is_active=university.is_active,
+        students=len(students),
+        verified_students=sum(1 for s in students if s.is_verified),
+        roster_size=len(roster_emails),
+        roster_imported_at=imported_at,
+        students_in_roster=in_roster if roster_emails else 0,
+        students_outside_roster=(len(students) - in_roster) if roster_emails else 0,
+    )
+
+
+@router.get("/universities", response_model=list[AdminUniversityRow])
+def list_universities_admin(db: Session = Depends(get_db)):
+    universities = db.scalars(select(University).order_by(University.name)).all()
+    return [_university_row(db, u) for u in universities]
+
+
+@router.get("/universities/{university_id}/roster", response_model=list[RosterEntryOut])
+def list_roster(
+    university_id: int,
+    q: str | None = Query(default=None, max_length=120),
+    limit: int = Query(default=200, ge=1, le=1000),
+    db: Session = Depends(get_db),
+):
+    """Amostra da lista importada (busca por e-mail, nome ou RA)."""
+    _university_or_404(db, university_id)
+    query = select(UniversityRosterEntry).where(UniversityRosterEntry.university_id == university_id)
+    if q:
+        term = f"%{q.strip().lower()}%"
+        query = query.where(
+            or_(
+                UniversityRosterEntry.email.like(term),
+                func.lower(UniversityRosterEntry.name).like(term),
+                UniversityRosterEntry.ra.like(term),
+            )
+        )
+    entries = db.scalars(query.order_by(UniversityRosterEntry.email).limit(limit)).all()
+    emails = [e.email for e in entries]
+    registered = set(
+        db.scalars(
+            select(Student.institutional_email).where(Student.institutional_email.in_(emails))
+        ).all()
+    ) if emails else set()
+    return [
+        RosterEntryOut(email=e.email, name=e.name, ra=e.ra, registered=e.email in registered) for e in entries
+    ]
+
+
+@router.post("/universities/{university_id}/roster", response_model=RosterImportOut)
+async def import_roster(
+    university_id: int,
+    file: UploadFile,
+    mode: str = Query(default="replace", pattern="^(replace|append)$"),
+    db: Session = Depends(get_db),
+):
+    """Importa o CSV com os e-mails dos alunos ativos da IES.
+
+    replace: a lista nova substitui a anterior (uso normal a cada semestre).
+    append: só acrescenta (ex.: calouros que entraram depois).
+    """
+    university = _university_or_404(db, university_id)
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="O CSV deve ter no máximo 5 MB.")
+    result = roster_service.import_roster(db, university, content, replace=(mode == "replace"))
+    return RosterImportOut(**result.__dict__)
+
+
+@router.delete("/universities/{university_id}/roster", response_model=AdminUniversityRow)
+def clear_roster(university_id: int, db: Session = Depends(get_db)):
+    """Apaga a lista: a faculdade volta a validar só pelo domínio + código."""
+    university = _university_or_404(db, university_id)
+    db.execute(delete(UniversityRosterEntry).where(UniversityRosterEntry.university_id == university.id))
+    db.commit()
+    return _university_row(db, university)

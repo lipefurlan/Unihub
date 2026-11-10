@@ -18,6 +18,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _course;
   bool _loading = false;
@@ -26,6 +27,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -37,6 +39,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref.read(authProvider.notifier).register(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
+            phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
             password: _passwordController.text,
             course: _course,
           );
@@ -74,11 +77,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _emailController,
                       decoration: const InputDecoration(
                         labelText: 'E-mail da faculdade',
-                        helperText: 'A faculdade precisa ser conveniada ao UniHub',
+                        helperText: 'Precisa ser de uma faculdade conveniada',
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) =>
                           v == null || !v.contains('@') ? 'Informe um e-mail válido' : null,
+                    ),
+                    const SizedBox(height: UniHubSpacing.x4),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Celular com WhatsApp',
+                        hintText: '(19) 99999-0000',
+                        helperText: 'Para avisos de treino e desafios',
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                        return digits.length < 10 ? 'Informe DDD + número' : null;
+                      },
                     ),
                     const SizedBox(height: UniHubSpacing.x4),
                     // Opcional: coloca o aluno na copa entre cursos da faculdade
@@ -102,6 +119,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onFieldSubmitted: (_) => _submit(),
                       validator: (v) =>
                           v == null || v.length < 6 ? 'Use ao menos 6 caracteres' : null,
+                    ),
+                    const SizedBox(height: UniHubSpacing.x3),
+                    const Text(
+                      'Vamos mandar um código para o e-mail da faculdade para confirmar que ele é seu.',
+                      style: TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
                     ),
                     const SizedBox(height: UniHubSpacing.x6),
                     FilledButton(

@@ -15,12 +15,16 @@ from app.schemas.student import (
     StudentOut,
     StudentProfileOut,
     StudentStatsOut,
+    PersonalEmailUpdate,
     StudentUpdate,
+    VerificationConfirm,
+    VerificationSend,
 )
 from app.core.courses import normalize_course
 from app.schemas.challenge import StudentChallengeOut
 from app.schemas.subscription import SubscriptionOut
-from app.services import challenge_service, engagement_service
+from app.services import challenge_service, engagement_service, verification_service
+from app.services.password_reset_service import find_account
 
 router = APIRouter(prefix="/students/me", tags=["Estudante"])
 
@@ -55,7 +59,60 @@ def update_my_profile(
         student.home_city = (data["home_city"] or "").strip() or None
     if "course" in data:
         student.course = normalize_course(data["course"])
+    if "phone" in data:
+        phone = verification_service.normalize_phone(data["phone"])
+        if phone != student.phone:
+            student.phone, student.phone_verified_at = phone, None
     db.commit()
+    db.refresh(student)
+    return _profile(student)
+
+
+@router.post("/verification/send", response_model=StudentProfileOut)
+def send_verification_code(
+    payload: VerificationSend,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """Reenvia o código de confirmação para o e-mail pessoal ou o da faculdade."""
+    verification_service.send_code(db, student, payload.kind)
+    db.refresh(student)
+    return _profile(student)
+
+
+@router.post("/verification/confirm", response_model=StudentProfileOut)
+def confirm_verification_code(
+    payload: VerificationConfirm,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    verification_service.confirm_code(db, student, payload.kind, payload.code)
+    db.refresh(student)
+    return _profile(student)
+
+
+@router.put("/personal-email", response_model=StudentProfileOut)
+def change_personal_email(
+    payload: PersonalEmailUpdate,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """Troca o e-mail pessoal (ex.: quem entrou pelo Google com o da faculdade).
+
+    O novo e-mail precisa ser confirmado por código.
+    """
+    email = payload.email.lower()
+    if email == student.email:
+        return _profile(student)
+    _, existing = find_account(db, email)
+    if existing is not None and existing is not student:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este e-mail já está em uso em outra conta.")
+    student.email = email
+    student.email_verified_at = None
+    if student.institutional_email == email:
+        student.email_verified_at = student.institutional_email_verified_at
+    db.commit()
+    verification_service.send_code(db, student, "personal", enforce_cooldown=False)
     db.refresh(student)
     return _profile(student)
 

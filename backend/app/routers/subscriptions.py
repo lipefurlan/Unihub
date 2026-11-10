@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.core.security import get_current_student
 from app.models import Plan, Student, Subscription
 from app.schemas.subscription import SubscriptionCreate, SubscriptionOut, SubscriptionUpdate
+from app.services import verification_service
 from app.services.university_service import student_price
 
 router = APIRouter(prefix="/subscriptions", tags=["Assinaturas"])
@@ -21,6 +22,7 @@ def create_subscription(
     student: Student = Depends(get_current_student),
     db: Session = Depends(get_db),
 ):
+    verification_service.require_verified(student)
     plan = db.get(Plan, payload.plan_id)
     if plan is None or not plan.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")

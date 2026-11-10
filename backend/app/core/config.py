@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "UniHub <nao-responda@felipefurlan.com.br>"
     password_reset_expire_minutes: int = 60
+    # Códigos de confirmação de e-mail (cadastro do aluno)
+    verification_code_expire_minutes: int = 15
+    verification_code_max_attempts: int = 5
+    verification_code_resend_seconds: int = 60
+    # Exige os dois e-mails confirmados para assinar. Desligue
+    # (EMAIL_VERIFICATION_REQUIRED=false) só se o Resend estiver fora do ar
+    # ou ainda não configurado, para a demo não travar.
+    email_verification_required: bool = True
     # Endereços dos frontends, usados para montar o link enviado por e-mail
     student_app_url: str = "http://localhost:5000"
     panel_app_url: str = "http://localhost:5001"
