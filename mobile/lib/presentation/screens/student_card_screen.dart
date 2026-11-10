@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
@@ -91,7 +92,7 @@ class StudentCardScreen extends ConsumerWidget {
                                     ),
                                   ],
                                 ),
-                                const _FauxBarcode(),
+                                _CardQr(data: memberId),
                               ],
                             ),
                           ],
@@ -129,7 +130,7 @@ class StudentCardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: UniHubSpacing.x1),
           Text(
-            'Mostre a carteirinha na recepção junto com o QR do check-in.',
+            'A recepção escaneia o QR para conferir sua matrícula na hora.',
             style: UniHubFonts.text(fontSize: 13, color: UniHubColors.textSecondary),
           ),
         ],
@@ -138,23 +139,32 @@ class StudentCardScreen extends ConsumerWidget {
   }
 }
 
-/// Código de barras decorativo (o POC não integra catraca real).
-class _FauxBarcode extends StatelessWidget {
-  const _FauxBarcode();
+/// QR da matrícula num quadrado branco, para a recepção escanear na hora
+/// (módulos escuros sobre branco: leitores não leem QR invertido).
+class _CardQr extends StatelessWidget {
+  const _CardQr({required this.data});
+
+  final String data;
 
   @override
   Widget build(BuildContext context) {
-    const widths = [2.0, 1.0, 3.0, 1.0, 2.0, 1.0, 1.0, 3.0, 2.0, 1.0, 2.0, 3.0, 1.0, 2.0, 1.0, 3.0];
-    return Row(
-      children: [
-        for (final w in widths)
-          Container(
-            width: w,
-            height: 32,
-            margin: const EdgeInsets.only(right: 1.5),
-            color: Colors.white,
-          ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: UniHubRadius.brMd,
+      ),
+      child: QrImageView(
+        data: data,
+        size: 62,
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.white,
+        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: UniHubColors.textPrimary),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: UniHubColors.textPrimary,
+        ),
+      ),
     );
   }
 }

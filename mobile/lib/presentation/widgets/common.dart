@@ -236,11 +236,11 @@ class GymCard extends StatelessWidget {
                 height: 104,
                 width: 156,
                 child: gym.photoUrl == null
-                    ? GymCover(name: gym.name)
+                    ? const _PhotoPlaceholder()
                     : Image.network(
                         gym.photoUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => GymCover(name: gym.name),
+                        errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
                       ),
               ),
             ),
@@ -283,54 +283,16 @@ class GymCard extends StatelessWidget {
   }
 }
 
-/// Capa da academia enquanto ela não tem foto: laranja claro com textura de
-/// papel e as iniciais em Red Hat Display, no lugar do ícone genérico.
-class GymCover extends StatelessWidget {
-  const GymCover({super.key, required this.name, this.large = false});
-
-  final String name;
-  final bool large;
-
-  String get _initials {
-    const skip = {'academia', 'studio', 'estúdio', 'de', 'da', 'do', 'e'};
-    final words = name
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty && !skip.contains(w.toLowerCase()))
-        .toList();
-    if (words.isEmpty) return name.isEmpty ? '' : name[0].toUpperCase();
-    return words.take(2).map((w) => w[0].toUpperCase()).join();
-  }
+class _PhotoPlaceholder extends StatelessWidget {
+  const _PhotoPlaceholder();
 
   @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: UniHubColors.accentSoft,
-      child: Stack(
-        children: [
-          const Positioned.fill(child: PaperGrain(opacity: 0.08)),
-          Positioned(
-            left: large ? UniHubSpacing.x6 : UniHubSpacing.x3,
-            bottom: large ? UniHubSpacing.x4 : UniHubSpacing.x1,
-            child: Text(
-              _initials,
-              style: UniHubFonts.display(
-                fontSize: large ? 88 : 48,
-                fontWeight: FontWeight.w900,
-                color: UniHubColors.accent,
-                letterSpacing: -2,
-              ),
-            ),
-          ),
-          if (large)
-            const Positioned(
-              right: UniHubSpacing.x6,
-              top: UniHubSpacing.x5,
-              child: UniHubSymbol(height: 20),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        color: UniHubColors.surface,
+        child: const Center(
+          child: Icon(LucideIcons.dumbbell, size: 28, color: UniHubColors.textSecondary),
+        ),
+      );
 }
 
 /// Carrossel horizontal com título e "Ver tudo" opcional.
