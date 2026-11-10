@@ -62,26 +62,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const _LoginHero(),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    UniHubSpacing.x6, UniHubSpacing.x8, UniHubSpacing.x6, UniHubSpacing.x6),
-                child: ConstrainedBox(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),
+            child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Entrar',
-                      style: UniHubFonts.display(fontSize: 24, fontWeight: FontWeight.w800),
+                    const Center(child: UniHubWordmark(size: 32)),
+                    const SizedBox(height: UniHubSpacing.x2),
+                    const Text(
+                      'Bem-estar para a sua vida universitária',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: UniHubColors.textSecondary),
                     ),
-                    const SizedBox(height: UniHubSpacing.x5),
+                    const SizedBox(height: UniHubSpacing.x10),
                     TextFormField(
                       controller: _emailController,
                       decoration: const InputDecoration(labelText: 'E-mail universitário'),
@@ -144,52 +143,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
               ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Topo laranja do login, como a tela de abertura do manual: logo branco,
-/// textura de papel e a cortina de meias-luas encostada na borda de baixo.
-class _LoginHero extends StatelessWidget {
-  const _LoginHero();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: UniHubColors.accent,
-      child: Stack(
-        children: [
-          const Positioned.fill(child: PaperGrain()),
-          // Símbolo vazado gigante saindo pelos cantos, longe do logo
-          const Positioned(left: -150, top: -120, child: SymbolOutline(height: 300, opacity: 0.30)),
-          const Positioned(right: -170, bottom: 10, child: SymbolOutline(height: 260, opacity: 0.30)),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                const SizedBox(height: UniHubSpacing.x12 + UniHubSpacing.x6),
-                const UniHubLogo(height: 40, onOrange: true),
-                const SizedBox(height: UniHubSpacing.x4),
-                Text(
-                  'Academias para universitários',
-                  style: UniHubFonts.text(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: UniHubSpacing.x12 + UniHubSpacing.x6),
-                const HalfMoonCurtain(radius: 14, onOrange: true),
-              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
