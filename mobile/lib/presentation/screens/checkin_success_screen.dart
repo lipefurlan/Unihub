@@ -27,9 +27,9 @@ class CheckinSuccessScreen extends StatelessWidget {
                 child: const Icon(LucideIcons.check, size: 40, color: UniHubColors.accent),
               ),
               const SizedBox(height: UniHubSpacing.x8),
-              Text(
+              const Text(
                 'Check-in confirmado',
-                style: UniHubFonts.display(fontSize: 24, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: UniHubSpacing.x3),
               Text(
