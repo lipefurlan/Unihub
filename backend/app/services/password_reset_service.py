@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -22,7 +22,11 @@ def _hash_token(token: str) -> str:
 def find_account(db: Session, email: str):
     """Procura o e-mail nas bases de contas (mesma ordem do login)."""
     for role, model in ACCOUNT_MODELS.items():
-        account = db.scalar(select(model).where(model.email == email))
+        condition = model.email == email
+        if model is Student:
+            # Aluno entra com o e-mail pessoal ou com o da faculdade
+            condition = or_(Student.email == email, Student.institutional_email == email)
+        account = db.scalar(select(model).where(condition))
         if account is not None and account.password_hash is not None:
             return role, account
     return None, None

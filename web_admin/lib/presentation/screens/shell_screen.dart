@@ -33,6 +33,7 @@ class ShellScreen extends ConsumerWidget {
     (path: '/admin/gyms', icon: LucideIcons.dumbbell, label: 'Academias'),
     (path: '/admin/planos', icon: LucideIcons.tags, label: 'Planos'),
     (path: '/admin/payouts', icon: LucideIcons.receipt, label: 'Repasses'),
+    (path: '/admin/faculdades', icon: LucideIcons.graduationCap, label: 'Faculdades'),
     (path: '/admin/students', icon: LucideIcons.users, label: 'Estudantes'),
     (path: '/admin/desafios', icon: LucideIcons.trophy, label: 'Desafios'),
   ];

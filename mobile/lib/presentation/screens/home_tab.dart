@@ -48,6 +48,10 @@ class HomeTab extends ConsumerWidget {
               student?.university ?? '',
               style: const TextStyle(fontSize: 14, color: UniHubColors.textSecondary),
             ),
+            if (student != null && !student.isVerified) ...[
+              const SizedBox(height: UniHubSpacing.x6),
+              _VerifyEmailBanner(single: student.singleEmail),
+            ],
             const SizedBox(height: UniHubSpacing.x8),
             _PlanSection(student: student),
             const SizedBox(height: UniHubSpacing.x8),
@@ -399,6 +403,44 @@ class _RateLastVisit extends ConsumerWidget {
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: UniHubColors.accent),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Aviso enquanto o aluno não confirmou os e-mails (não consegue assinar).
+class _VerifyEmailBanner extends StatelessWidget {
+  const _VerifyEmailBanner({required this.single});
+
+  final bool single; // um e-mail só (o da faculdade)
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: UniHubColors.accentSoft,
+      borderRadius: BorderRadius.circular(UniHubRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(UniHubRadius.md),
+        onTap: () => context.push('/confirmar-email'),
+        child: Padding(
+          padding: const EdgeInsets.all(UniHubSpacing.x4),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.mailCheck, color: UniHubColors.accent),
+              const SizedBox(width: UniHubSpacing.x3),
+              Expanded(
+                child: Text(
+                  single
+                      ? 'Confirme o e-mail da faculdade com o código que enviamos para poder assinar um plano.'
+                      : 'Confirme seus e-mails com os códigos que enviamos para poder assinar um plano.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              const Icon(LucideIcons.chevronRight, size: 18),
+            ],
+          ),
         ),
       ),
     );

@@ -26,6 +26,11 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
     if (current?.plan.id == plan.id) return;
     // Primeira assinatura passa pelo checkout (PIX ou cartão)
     if (current == null) {
+      // Só assina quem confirmou o e-mail pessoal e o da faculdade
+      if (!student.isVerified) {
+        context.push('/confirmar-email');
+        return;
+      }
       context.push('/checkout', extra: plan);
       return;
     }

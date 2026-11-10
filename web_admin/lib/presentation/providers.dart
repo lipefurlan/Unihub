@@ -95,6 +95,10 @@ final adminPlansProvider = FutureProvider<List<AdminPlan>>(
   (ref) => ref.watch(apiClientProvider).getAdminPlans(),
 );
 
+final adminUniversitiesProvider = FutureProvider<List<AdminUniversity>>(
+  (ref) => ref.watch(apiClientProvider).getAdminUniversities(),
+);
+
 final adminGymsProvider = FutureProvider<List<AdminGym>>(
   (ref) => ref.watch(apiClientProvider).getAdminGyms(),
 );

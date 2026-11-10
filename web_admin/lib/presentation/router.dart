@@ -10,6 +10,7 @@ import 'screens/admin_overview_screen.dart';
 import 'screens/admin_payouts_screen.dart';
 import 'screens/admin_plans_screen.dart';
 import 'screens/admin_students_screen.dart';
+import 'screens/admin_universities_screen.dart';
 import 'screens/challenges_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/entry_validation_screen.dart';
@@ -126,6 +127,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/planos',
             builder: (context, state) => const AdminPlansScreen(),
+          ),
+          GoRoute(
+            path: '/admin/faculdades',
+            builder: (context, state) => const AdminUniversitiesScreen(),
           ),
           GoRoute(
             path: '/admin/students',

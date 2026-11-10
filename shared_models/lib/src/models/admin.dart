@@ -160,6 +160,8 @@ class AdminStudentRow {
   final String? planName;
   final String? subscriptionStatus;
   final int totalCheckins;
+  final String? institutionalEmail;
+  final bool verified; // confirmou os dois e-mails
 
   const AdminStudentRow({
     required this.id,
@@ -169,6 +171,8 @@ class AdminStudentRow {
     this.planName,
     this.subscriptionStatus,
     required this.totalCheckins,
+    this.institutionalEmail,
+    this.verified = true,
   });
 
   factory AdminStudentRow.fromJson(Map<String, dynamic> json) => AdminStudentRow(
@@ -179,5 +183,99 @@ class AdminStudentRow {
         planName: json['plan_name'] as String?,
         subscriptionStatus: json['subscription_status'] as String?,
         totalCheckins: json['total_checkins'] as int,
+        institutionalEmail: json['institutional_email'] as String?,
+        verified: json['verified'] as bool? ?? true,
+      );
+}
+
+
+/// Faculdade na tela "Faculdades" da operação, com a lista de alunos da IES.
+class AdminUniversity {
+  final int id;
+  final String name;
+  final List<String> emailDomains;
+  final bool isActive;
+  final int students;
+  final int verifiedStudents;
+  final int rosterSize; // 0 = valida só pelo domínio + código
+  final DateTime? rosterImportedAt;
+  final int studentsInRoster;
+  final int studentsOutsideRoster;
+
+  const AdminUniversity({
+    required this.id,
+    required this.name,
+    required this.emailDomains,
+    required this.isActive,
+    required this.students,
+    required this.verifiedStudents,
+    required this.rosterSize,
+    this.rosterImportedAt,
+    required this.studentsInRoster,
+    required this.studentsOutsideRoster,
+  });
+
+  bool get hasRoster => rosterSize > 0;
+
+  factory AdminUniversity.fromJson(Map<String, dynamic> json) => AdminUniversity(
+        id: json['id'] as int,
+        name: json['name'] as String,
+        emailDomains: (json['email_domains'] as List).cast<String>(),
+        isActive: json['is_active'] as bool,
+        students: json['students'] as int,
+        verifiedStudents: json['verified_students'] as int,
+        rosterSize: json['roster_size'] as int,
+        rosterImportedAt: json['roster_imported_at'] == null
+            ? null
+            : DateTime.parse(json['roster_imported_at'] as String),
+        studentsInRoster: json['students_in_roster'] as int,
+        studentsOutsideRoster: json['students_outside_roster'] as int,
+      );
+}
+
+class RosterEntry {
+  final String email;
+  final String? name;
+  final String? ra;
+  final bool registered; // já criou conta no UniHub
+
+  const RosterEntry({required this.email, this.name, this.ra, required this.registered});
+
+  factory RosterEntry.fromJson(Map<String, dynamic> json) => RosterEntry(
+        email: json['email'] as String,
+        name: json['name'] as String?,
+        ra: json['ra'] as String?,
+        registered: json['registered'] as bool,
+      );
+}
+
+/// Resumo da importação do CSV.
+class RosterImportResult {
+  final int totalRows;
+  final int imported;
+  final int duplicates;
+  final int invalid;
+  final int wrongDomain;
+  final int rosterSize;
+  final List<String> errors;
+
+  const RosterImportResult({
+    required this.totalRows,
+    required this.imported,
+    required this.duplicates,
+    required this.invalid,
+    required this.wrongDomain,
+    required this.rosterSize,
+    required this.errors,
+  });
+
+  factory RosterImportResult.fromJson(Map<String, dynamic> json) => RosterImportResult(
+        totalRows: json['total_rows'] as int,
+        imported: json['imported'] as int,
+        duplicates: json['duplicates'] as int,
+        invalid: json['invalid'] as int,
+        wrongDomain: json['wrong_domain'] as int,
+        rosterSize: json['roster_size'] as int,
+        errors: (json['errors'] as List).cast<String>(),
       );
 }

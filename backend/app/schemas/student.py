@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.subscription import SubscriptionOut
@@ -15,6 +17,10 @@ class StudentOut(BaseModel):
     weekly_goal: int = 3
     home_city: str | None = None
     course: str | None = None
+    institutional_email: str | None = None
+    email_verified: bool = False
+    institutional_email_verified: bool = False
+    phone: str | None = None
 
 
 class StudentProfileOut(StudentOut):
@@ -31,6 +37,20 @@ class StudentUpdate(BaseModel):
     weekly_goal: int | None = Field(default=None, ge=1, le=7)
     home_city: str | None = Field(default=None, max_length=80)
     course: str | None = Field(default=None, max_length=80)
+    phone: str | None = Field(default=None, max_length=30)
+
+
+class VerificationSend(BaseModel):
+    kind: Literal["personal", "institutional"]
+
+
+class VerificationConfirm(BaseModel):
+    kind: Literal["personal", "institutional"]
+    code: str = Field(min_length=4, max_length=10)
+
+
+class PersonalEmailUpdate(BaseModel):
+    email: EmailStr
 
 
 class WeekStat(BaseModel):

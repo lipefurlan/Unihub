@@ -49,6 +49,7 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     required String name,
     required String email,
     required String password,
+    String? phone,
     String? course,
   }) async {
     final repo = ref.read(authRepositoryProvider);
@@ -56,6 +57,7 @@ class AuthNotifier extends AsyncNotifier<Student?> {
       name: name,
       email: email,
       password: password,
+      phone: phone,
       course: course,
     );
     state = AsyncData(profile);
@@ -65,6 +67,9 @@ class AuthNotifier extends AsyncNotifier<Student?> {
     final repo = ref.read(authRepositoryProvider);
     state = AsyncData(await repo.fetchProfile());
   }
+
+  /// Atualiza o perfil com o que a API devolveu (ex.: depois de confirmar um código).
+  void setProfile(Student profile) => state = AsyncData(profile);
 
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();

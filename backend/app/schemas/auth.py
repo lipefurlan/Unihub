@@ -3,7 +3,14 @@ from pydantic import BaseModel, EmailStr, Field
 
 class StudentRegister(BaseModel):
     name: str = Field(min_length=2, max_length=120)
+    # E-mail de login. Sem institutional_email, ele é o da faculdade (fluxo
+    # padrão do app: um e-mail, um código).
     email: EmailStr
+    # Opcional: e-mail da faculdade separado do de login. Se vier, o "email"
+    # vira o pessoal e cada um recebe um código.
+    institutional_email: EmailStr | None = None
+    # Celular com WhatsApp, ex.: "(19) 99999-0000" ou "+55 19 99999-0000"
+    phone: str | None = Field(default=None, max_length=30)
     password: str = Field(min_length=6)
     # A universidade vem do domínio do e-mail (IES conveniada); o campo
     # continua aceito para não quebrar clientes antigos, mas é ignorado.

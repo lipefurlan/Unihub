@@ -250,6 +250,10 @@ def main() -> None:
                 photo_url=f"https://i.pravatar.cc/300?img={i + 10}",
                 status="active",
                 course=course,
+                # Demo: alunos já confirmados (pessoal = institucional)
+                institutional_email=email,
+                email_verified_at=datetime.now(),
+                institutional_email_verified_at=datetime.now(),
             )
             student.seed_city = city
             student.home_city = city.capitalize()

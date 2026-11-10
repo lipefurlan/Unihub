@@ -82,6 +82,8 @@ class AdminStudentRow(BaseModel):
     plan_name: str | None
     subscription_status: str | None
     total_checkins: int
+    institutional_email: str | None = None
+    verified: bool = False  # confirmou o e-mail pessoal e o da faculdade
 
 
 class TopGym(BaseModel):
@@ -108,3 +110,35 @@ class TemporaryPasswordOut(BaseModel):
     """Senha temporária gerada pelo admin (suporte manual); mostrada uma vez."""
 
     temporary_password: str
+
+
+class AdminUniversityRow(BaseModel):
+    """IES na tela "Faculdades" da operação, com o estado da lista de alunos."""
+
+    id: int
+    name: str
+    email_domains: list[str]
+    is_active: bool
+    students: int  # alunos cadastrados no UniHub
+    verified_students: int  # com os dois e-mails confirmados
+    roster_size: int  # alunos na lista importada (0 = valida só pelo domínio)
+    roster_imported_at: datetime | None
+    students_in_roster: int
+    students_outside_roster: int  # cadastrados que não estão na lista atual
+
+
+class RosterEntryOut(BaseModel):
+    email: str
+    name: str | None
+    ra: str | None
+    registered: bool  # já criou conta no UniHub
+
+
+class RosterImportOut(BaseModel):
+    total_rows: int
+    imported: int
+    duplicates: int
+    invalid: int
+    wrong_domain: int
+    roster_size: int
+    errors: list[str]

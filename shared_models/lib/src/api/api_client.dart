@@ -83,13 +83,18 @@ class ApiClient {
     required String name,
     required String email,
     required String password,
+    String? institutionalEmail,
+    String? phone,
     String? course,
   }) =>
       _run(() async {
-        // A universidade vem do domínio do e-mail (IES conveniada)
+        // [email] é o da faculdade (a IES vem do domínio) e recebe um código.
+        // [institutionalEmail] só se o login for um e-mail pessoal separado.
         final res = await _dio.post('/auth/register/student', data: {
           'name': name,
           'email': email,
+          'institutional_email': ?institutionalEmail,
+          'phone': ?phone,
           'password': password,
           'course': ?course,
         });
@@ -147,6 +152,23 @@ class ApiClient {
           if (homeCity != null || clearHomeCity) 'home_city': homeCity,
           'course': ?course,
         });
+        return Student.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  /// Reenvia o código de confirmação; [kind] = personal | institutional.
+  Future<Student> sendVerificationCode(String kind) => _run(() async {
+        final res = await _dio.post('/students/me/verification/send', data: {'kind': kind});
+        return Student.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<Student> confirmVerificationCode(String kind, String code) => _run(() async {
+        final res = await _dio.post('/students/me/verification/confirm', data: {'kind': kind, 'code': code});
+        return Student.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  /// Troca o e-mail pessoal; o novo precisa ser confirmado por código.
+  Future<Student> changePersonalEmail(String email) => _run(() async {
+        final res = await _dio.put('/students/me/personal-email', data: {'email': email});
         return Student.fromJson(res.data as Map<String, dynamic>);
       });
 
@@ -372,6 +394,40 @@ class ApiClient {
   Future<AdminPayoutRow> markPayoutPaid(int gymId, String referenceMonth) => _run(() async {
         final res = await _dio.post('/admin/payouts/$gymId/$referenceMonth/mark-paid');
         return AdminPayoutRow.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<List<AdminUniversity>> getAdminUniversities() => _run(() async {
+        final res = await _dio.get('/admin/universities');
+        return (res.data as List)
+            .map((u) => AdminUniversity.fromJson(u as Map<String, dynamic>))
+            .toList();
+      });
+
+  Future<List<RosterEntry>> getUniversityRoster(int universityId, {String? query}) =>
+      _run(() async {
+        final res = await _dio.get('/admin/universities/$universityId/roster',
+            queryParameters: {if (query != null && query.isNotEmpty) 'q': query});
+        return (res.data as List).map((e) => RosterEntry.fromJson(e as Map<String, dynamic>)).toList();
+      });
+
+  /// Importa o CSV da lista de alunos. [replace] troca a lista inteira;
+  /// false só acrescenta.
+  Future<RosterImportResult> importUniversityRoster(
+    int universityId,
+    List<int> bytes,
+    String filename, {
+    bool replace = true,
+  }) =>
+      _run(() async {
+        final form = FormData.fromMap({'file': MultipartFile.fromBytes(bytes, filename: filename)});
+        final res = await _dio.post('/admin/universities/$universityId/roster',
+            data: form, queryParameters: {'mode': replace ? 'replace' : 'append'});
+        return RosterImportResult.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<AdminUniversity> clearUniversityRoster(int universityId) => _run(() async {
+        final res = await _dio.delete('/admin/universities/$universityId/roster');
+        return AdminUniversity.fromJson(res.data as Map<String, dynamic>);
       });
 
   /// Gera senha temporária (suporte manual); a API devolve a senha uma vez.

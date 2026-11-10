@@ -86,6 +86,16 @@ No app do estudante, o Google cria a conta no primeiro acesso, desde que o e-mai
 
 O link vale 60 minutos e só pode ser usado uma vez. Por segurança, a tela sempre diz "se houver uma conta, enviamos o link", exista ou não o e-mail.
 
+### Código de confirmação no cadastro (mesmo Resend)
+
+O aluno se cadastra com o e-mail da faculdade (e o celular de WhatsApp) e recebe um código de 6 dígitos, válido por 15 minutos, com até 5 tentativas e 1 reenvio por minuto. Ele já entra no app, mas só assina um plano depois de confirmar. Quem entra pelo Google com o e-mail da faculdade já nasce confirmado. Alunos que existiam antes desta versão ficam confirmados pela migração.
+
+Se o Resend ainda não estiver configurado, o código só aparece no log da API e o aluno fica travado na assinatura. Para a demo não travar, dá para desligar a exigência com `EMAIL_VERIFICATION_REQUIRED=false` nas Variables do Railway (o código continua sendo enviado/logado, só não bloqueia).
+
+### Lista de alunos da faculdade (CSV)
+
+No painel da operação, em Faculdades, cada IES tem o botão "Importar lista (CSV)". Sem lista, vale só o domínio do e-mail + código. Com lista, só cadastra quem estiver nela (quem já tinha conta continua com acesso). O CSV precisa de uma coluna `email`; `nome` e `ra` são opcionais, e o RA fica guardado para o cruzamento futuro com o sistema da faculdade. "Baixar modelo CSV" gera um exemplo.
+
 ## Regras do plano de negócio (IES conveniada, preço e teto de visitas)
 
 - **Só alunos de IES conveniada se cadastram**: o domínio do e-mail precisa estar na tabela `universities`. O seed cria FACAMP, Unicamp, PUC-Campinas, FATEC Americana, FAM, ESAMC e Mackenzie.
