@@ -54,7 +54,8 @@ class AdminOverviewScreen extends ConsumerWidget {
               MetricBlock(
                 label: 'Receita das IES',
                 value: formatBRL(o.iesRevenue),
-                detail: '${o.activeUniversities} IES: taxa fixa + taxa e subsídio por aluno',
+                detail:
+                    '${o.activeUniversities} IES: taxa fixa + taxa e subsídio por aluno',
               ),
               MetricBlock(
                 label: 'Repasses do mês',
@@ -70,6 +71,30 @@ class AdminOverviewScreen extends ConsumerWidget {
                 highlight: true,
               ),
             ],
+          ),
+          const SizedBox(height: UniHubSpacing.x10),
+          const Divider(),
+          const SizedBox(height: UniHubSpacing.x8),
+          const Text(
+            'Resultado do mês',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: UniHubSpacing.x4),
+          MaxWidth(
+            maxWidth: 560,
+            child: Column(
+              children: [
+                _ResultLine('Assinaturas dos alunos', o.subscriptionRevenue),
+                _ResultLine('Faculdades conveniadas', o.iesRevenue),
+                _ResultLine('Repasses às academias', -o.monthPayoutTotal),
+                const Divider(),
+                _ResultLine(
+                  'Margem antes de impostos',
+                  o.estimatedMargin,
+                  bold: true,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: UniHubSpacing.x10),
           const Divider(),
@@ -130,6 +155,40 @@ class AdminOverviewScreen extends ConsumerWidget {
                 ],
               ],
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultLine extends StatelessWidget {
+  const _ResultLine(this.label, this.value, {this.bold = false});
+
+  final String label;
+  final double value;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final weight = bold ? FontWeight.w800 : FontWeight.w500;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: UniHubSpacing.x2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 14, fontWeight: weight),
+            ),
+          ),
+          Text(
+            value < 0 ? '− ${formatBRL(-value)}' : formatBRL(value),
+            style: UniHubStyles.money(
+              size: 14,
+              weight: weight,
+              color: bold ? UniHubColors.accent : UniHubColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );

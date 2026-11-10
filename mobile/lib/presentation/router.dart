@@ -6,6 +6,7 @@ import 'package:shared_models/shared_models.dart';
 import 'providers.dart';
 import 'screens/checkin_success_screen.dart';
 import 'screens/checkin_tab.dart';
+import 'screens/checkout_screen.dart';
 import 'screens/explore_tab.dart';
 import 'screens/gym_detail_screen.dart';
 import 'screens/home_tab.dart';
@@ -71,6 +72,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => CheckinSuccessScreen(checkin: state.extra as CheckIn),
       ),
       GoRoute(path: '/plans', builder: (context, state) => const PlanManageScreen()),
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => CheckoutScreen(plan: state.extra as Plan),
+      ),
       GoRoute(path: '/card', builder: (context, state) => const StudentCardScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => ShellScreen(shell: shell),

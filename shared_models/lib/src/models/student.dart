@@ -10,6 +10,8 @@ class Student {
   final String status;
   final Subscription? subscription;
   final double universitySubsidy; // subsídio mensal da IES conveniada
+  final int weeklyGoal; // meta de treinos por semana
+  final String? homeCity; // cidade natal (fins de semana e férias)
 
   const Student({
     required this.id,
@@ -20,6 +22,8 @@ class Student {
     required this.status,
     this.subscription,
     this.universitySubsidy = 0,
+    this.weeklyGoal = 3,
+    this.homeCity,
   });
 
   /// Tier do plano vigente (0 = sem assinatura).
@@ -40,5 +44,56 @@ class Student {
             ? null
             : Subscription.fromJson(json['subscription'] as Map<String, dynamic>),
         universitySubsidy: (json['university_subsidy'] as num? ?? 0).toDouble(),
+        weeklyGoal: json['weekly_goal'] as int? ?? 3,
+        homeCity: json['home_city'] as String?,
+      );
+}
+
+
+/// Uma semana (segunda a domingo) no histórico da meta.
+class WeekStat {
+  final DateTime weekStart;
+  final int checkins;
+  final bool goalMet;
+
+  const WeekStat({required this.weekStart, required this.checkins, required this.goalMet});
+
+  factory WeekStat.fromJson(Map<String, dynamic> json) => WeekStat(
+        weekStart: DateTime.parse(json['week_start'] as String),
+        checkins: json['checkins'] as int,
+        goalMet: json['goal_met'] as bool,
+      );
+}
+
+/// Meta semanal, sequência de semanas e resumo do mês do aluno.
+class StudentStats {
+  final int weeklyGoal;
+  final int weekCheckins;
+  final int streakWeeks;
+  final List<WeekStat> lastWeeks;
+  final int monthCheckins;
+  final int monthGyms;
+  final String? monthTopGym;
+
+  const StudentStats({
+    required this.weeklyGoal,
+    required this.weekCheckins,
+    required this.streakWeeks,
+    required this.lastWeeks,
+    required this.monthCheckins,
+    required this.monthGyms,
+    this.monthTopGym,
+  });
+
+  factory StudentStats.fromJson(Map<String, dynamic> json) => StudentStats(
+        weeklyGoal: json['weekly_goal'] as int,
+        weekCheckins: json['week_checkins'] as int,
+        streakWeeks: json['streak_weeks'] as int,
+        lastWeeks: (json['last_weeks'] as List)
+            .map((w) => WeekStat.fromJson(w as Map<String, dynamic>))
+            .toList(),
+        monthCheckins: json['month_checkins'] as int,
+        monthGyms: json['month_gyms'] as int,
+        monthTopGym: json['month_top_gym'] as String?,
       );
 }

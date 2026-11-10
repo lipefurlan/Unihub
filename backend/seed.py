@@ -28,6 +28,8 @@ STUDENT_PASSWORD = "senha123"
 DEMO_STUDENT_EMAIL = "joao.silva@dac.unicamp.br"
 GYM_PASSWORD = "academia123"
 ADMIN_PASSWORD = "admin123"
+IES_EMAIL = "programa@facamp.edu.br"  # login da FACAMP no portal da IES
+IES_PASSWORD = "facamp123"
 
 # ---------------------------------------------------------------------------
 # Modelo de negócio do TCC (plano de negócio, versão revisada)
@@ -118,6 +120,11 @@ STUDENTS = [
     ("Matheus Pereira", "matheus.pereira@fatec.sp.gov.br", "FATEC Americana", 1, "americana"),
     ("Beatriz Nunes", "beatriz.nunes@dac.unicamp.br", "Unicamp", 1, "campinas"),
     ("Vinícius Araújo", "vinicius.araujo@fam.br", "FAM Americana", 1, "americana"),
+    # Mais alunos da FACAMP (piloto), para o portal da IES ter o que mostrar
+    ("Bruno Teixeira", "bruno.teixeira@facamp.edu.br", "FACAMP", 1, "campinas"),
+    ("Carolina Ribeiro", "carolina.ribeiro@facamp.edu.br", "FACAMP", 1, "campinas"),
+    ("Diego Moraes", "diego.moraes@facamp.edu.br", "FACAMP", 1, "campinas"),
+    ("Fernanda Duarte", "fernanda.duarte@facamp.edu.br", "FACAMP", 1, "campinas"),
 ]
 
 # Pesos das faixas de horário dos check-ins (pico de manhã cedo e fim de tarde)
@@ -168,6 +175,9 @@ def main() -> None:
                     monthly_fee=Decimal(IES_MONTHLY_FEE),
                     fee_per_student=Decimal(IES_FEE_PER_STUDENT),
                     subsidy_per_student=Decimal(IES_SUBSIDY_PER_STUDENT),
+                    # Só a FACAMP (piloto) tem acesso ao portal no seed
+                    email=IES_EMAIL if name == "FACAMP" else None,
+                    password_hash=hash_password(IES_PASSWORD) if name == "FACAMP" else None,
                 )
             )
         db.flush()
@@ -205,7 +215,7 @@ def main() -> None:
                 opening_hours=hours,
                 photo_url=f"https://picsum.photos/seed/unihub-gym-{i}/640/360",
             )
-            gym.city = city  # atributo auxiliar do seed (não persiste)
+            gym.seed_city = city  # atributo auxiliar do seed (não persiste)
             db.add(gym)
             gyms.append(gym)
 
@@ -225,7 +235,8 @@ def main() -> None:
                 photo_url=f"https://i.pravatar.cc/300?img={i + 10}",
                 status="active",
             )
-            student.city = city
+            student.seed_city = city
+            student.home_city = city.capitalize()
             student.plan_tier = plan_tier
             db.add(student)
             students.append(student)
@@ -257,11 +268,17 @@ def main() -> None:
         planned: list[tuple[Student, Gym, datetime]] = []
         for student in students:
             accessible = [g for g in gyms if g.min_plan_tier <= student.plan_tier]
-            local = [g for g in accessible if g.city == student.city]
+            local = [g for g in accessible if g.seed_city == student.seed_city]
             pool = local or accessible
             favorites = random.sample(pool, k=min(2, len(pool)))
 
+            student.favorite_gyms = list(favorites)
+
             if student.email == DEMO_STUDENT_EMAIL:
+                # Demo: João é de Americana (cidade natal) e estuda em Campinas;
+                # meta de 2 treinos por semana para a sequência aparecer
+                student.home_city = "Americana"
+                student.weekly_goal = 2
                 # João chega à demo com 9 visitas pagas no mês: o próximo
                 # check-in é o 10º (pago) e o seguinte já passa do teto.
                 for d in random.sample(range(32, 60), k=8):
@@ -272,7 +289,10 @@ def main() -> None:
                 step = (now - timedelta(hours=1) - month_start) / 9
                 for k in range(9):
                     # Alterna entre 3 academias para respeitar o anti-fraude de 3h
-                    planned.append((student, pool[k % min(3, len(pool))], month_start + step * k))
+                    # Horário realista no dia (nada de treino às 2h da manhã)
+                    ts = (month_start + step * k).replace(hour=pick_hour(), minute=random.randint(0, 59))
+                    ts = min(ts, now - timedelta(hours=4))
+                    planned.append((student, pool[k % min(3, len(pool))], ts))
                 continue
 
             n_checkins = random.randint(10, 17)
@@ -301,6 +321,8 @@ def main() -> None:
                     plan_tier_at_checkin=student.plan_tier,
                     payout_amount_recorded=gym.checkin_payout_amount if is_paid else Decimal("0"),
                     is_paid=is_paid,
+                    # Visitas antigas já passaram pela recepção
+                    validated_at=ts + timedelta(minutes=random.randint(1, 5)),
                 )
             )
             total_checkins += 1
@@ -356,6 +378,7 @@ def main() -> None:
         print(f"  Estudante (Unicamp): {DEMO_STUDENT_EMAIL} / {STUDENT_PASSWORD}")
         print(f"  Academia (Campus Fit): contato@campusfit.com.br / {GYM_PASSWORD}")
         print(f"  Admin (Operação UniHub): admin@unihub.com.br / {ADMIN_PASSWORD}")
+        print(f"  IES (FACAMP): {IES_EMAIL} / {IES_PASSWORD}")
         print()
         print("Dica de demo: o João já tem 9 visitas pagas no mês. O 10º check-in é pago;")
         print(f"a partir do 11º a academia vê a visita como não remunerada (teto de {settings.max_paid_checkins_per_month}).")

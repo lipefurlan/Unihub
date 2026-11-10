@@ -10,7 +10,9 @@ import 'screens/admin_overview_screen.dart';
 import 'screens/admin_payouts_screen.dart';
 import 'screens/admin_students_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/entry_validation_screen.dart';
 import 'screens/finance_screen.dart';
+import 'screens/ies_screens.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
@@ -43,11 +45,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (session == null) return onAuthScreen ? null : '/login';
 
-      final home = session.isAdmin ? '/admin/overview' : '/dashboard';
+      final home = session.home;
       if (onAuthScreen) return home;
       // Cada role só navega na própria área
-      final inAdminArea = location.startsWith('/admin');
-      if (session.isAdmin != inAdminArea) return home;
+      final area = location.startsWith('/admin')
+          ? '/admin'
+          : (location.startsWith('/ies') ? '/ies' : '');
+      if (area != session.areaPrefix) return home;
       return null;
     },
     routes: [
@@ -82,6 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
+            path: '/entrada',
+            builder: (context, state) => const EntryValidationScreen(),
+          ),
+          GoRoute(
             path: '/students',
             builder: (context, state) => const StudentsScreen(),
           ),
@@ -109,6 +117,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/students',
             builder: (context, state) => const AdminStudentsScreen(),
+          ),
+          // Portal da faculdade conveniada
+          GoRoute(
+            path: '/ies/overview',
+            builder: (context, state) => const IesOverviewScreen(),
+          ),
+          GoRoute(
+            path: '/ies/students',
+            builder: (context, state) => const IesStudentsScreen(),
           ),
         ],
       ),

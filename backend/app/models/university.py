@@ -25,6 +25,9 @@ class University(Base):
     # Subsídio opcional, igual para todos os alunos: baixa o preço que o aluno paga
     subsidy_per_student: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    # Acesso da IES ao painel (portal da faculdade); vazio = sem login
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255))
 
     def accepts_email(self, email: str) -> bool:
         domain = email.rsplit("@", 1)[-1].lower()

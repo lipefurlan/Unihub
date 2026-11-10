@@ -16,6 +16,7 @@ class GymPublicOut(BaseModel):
     capacity: int
     opening_hours: str
     photo_url: str | None
+    city: str
 
 
 class GymOwnerOut(GymPublicOut):
@@ -38,3 +39,16 @@ class GymUpdate(BaseModel):
     modalities: list[str] | None = None
     capacity: int | None = Field(default=None, gt=0)
     opening_hours: str | None = None
+
+
+class HourCount(BaseModel):
+    hour: int
+    checkins: int
+
+
+class GymBusyHoursOut(BaseModel):
+    """Movimento por hora nos últimos 30 dias (check-ins UniHub)."""
+
+    hours: list[HourCount]
+    quietest_start: int | None  # início da faixa de 2h mais vazia
+    quietest_end: int | None

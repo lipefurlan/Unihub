@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import hash_password
-from app.models import Admin, Gym, PasswordResetToken, Student
+from app.models import Admin, Gym, PasswordResetToken, Student, University
 from app.services.email_service import send_email
 
-ACCOUNT_MODELS = {"student": Student, "gym": Gym, "admin": Admin}
+# Ordem de busca por e-mail (a mesma do login); "ies" é o portal da faculdade
+ACCOUNT_MODELS = {"student": Student, "gym": Gym, "admin": Admin, "ies": University}
 
 
 def _hash_token(token: str) -> str:
@@ -19,10 +20,10 @@ def _hash_token(token: str) -> str:
 
 
 def find_account(db: Session, email: str):
-    """Procura o e-mail nas três bases de contas (mesma ordem do login)."""
+    """Procura o e-mail nas bases de contas (mesma ordem do login)."""
     for role, model in ACCOUNT_MODELS.items():
         account = db.scalar(select(model).where(model.email == email))
-        if account is not None:
+        if account is not None and account.password_hash is not None:
             return role, account
     return None, None
 
@@ -47,7 +48,7 @@ def request_password_reset(db: Session, email: str) -> None:
     )
     db.commit()
 
-    # Estudante redefine no app; academia e admin, no painel. Os apps Flutter
+    # Estudante redefine no app; academia, admin e IES, no painel. Os apps Flutter
     # web usam rotas com "#" (estratégia padrão de URL), daí o "/#/".
     base_url = settings.student_app_url if role == "student" else settings.panel_app_url
     link = f"{base_url.rstrip('/')}/#/redefinir-senha?token={token}"

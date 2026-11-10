@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Admin, Gym, Student
+from app.models import Student
 from app.schemas.auth import (
     ForgotPasswordRequest,
     GoogleLoginRequest,
@@ -48,18 +48,10 @@ def register_student(request: Request, payload: StudentRegister, db: Session = D
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
-    """Login único: tenta estudante e depois academia; o role vai no JWT."""
-    student = db.scalar(select(Student).where(Student.email == payload.email))
-    if student is not None and verify_password(payload.password, student.password_hash):
-        return TokenResponse(access_token=create_access_token(student.id, "student"), role="student")
-
-    gym = db.scalar(select(Gym).where(Gym.email == payload.email))
-    if gym is not None and verify_password(payload.password, gym.password_hash):
-        return TokenResponse(access_token=create_access_token(gym.id, "gym"), role="gym")
-
-    admin = db.scalar(select(Admin).where(Admin.email == payload.email))
-    if admin is not None and verify_password(payload.password, admin.password_hash):
-        return TokenResponse(access_token=create_access_token(admin.id, "admin"), role="admin")
+    """Login único para estudante, academia, admin e IES; o role vai no JWT."""
+    role, account = find_account(db, payload.email)
+    if account is not None and verify_password(payload.password, account.password_hash):
+        return TokenResponse(access_token=create_access_token(account.id, role), role=role)
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha incorretos.")
 

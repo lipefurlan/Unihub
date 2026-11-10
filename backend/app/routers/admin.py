@@ -1,3 +1,4 @@
+import secrets
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path as FilePath
@@ -17,6 +18,7 @@ from app.schemas.admin import (
     AdminPayoutRow,
     AdminStudentRow,
     PlatformOverview,
+    TemporaryPasswordOut,
     TopGym,
 )
 from app.services import payout_service
@@ -295,3 +297,33 @@ def list_students(db: Session = Depends(get_db)):
             )
         )
     return rows
+
+
+def _new_temporary_password() -> str:
+    # 8 caracteres fáceis de ditar (sem 0/O, 1/l/I)
+    alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(8))
+
+
+@router.post("/students/{student_id}/temporary-password", response_model=TemporaryPasswordOut)
+def reset_student_password(student_id: int, db: Session = Depends(get_db)):
+    """Suporte manual: gera uma senha temporária para o aluno (mostrada uma vez)."""
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudante não encontrado.")
+    password = _new_temporary_password()
+    student.password_hash = hash_password(password)
+    db.commit()
+    return TemporaryPasswordOut(temporary_password=password)
+
+
+@router.post("/gyms/{gym_id}/temporary-password", response_model=TemporaryPasswordOut)
+def reset_gym_password(gym_id: int, db: Session = Depends(get_db)):
+    """Suporte manual: gera uma senha temporária para a academia (mostrada uma vez)."""
+    gym = db.get(Gym, gym_id)
+    if gym is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Academia não encontrada.")
+    password = _new_temporary_password()
+    gym.password_hash = hash_password(password)
+    db.commit()
+    return TemporaryPasswordOut(temporary_password=password)

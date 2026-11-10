@@ -11,8 +11,8 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 - [x] **"Esqueci minha senha"** — feito: link por e-mail (Resend), válido por 60 min e de uso único.
   Antes: fluxo por e-mail com link/código de redefinição
   (exige um serviço de envio de e-mail, ex.: Resend/SendGrid, com domínio felipefurlan.com.br).
-- [ ] **Redefinição de senha pelo admin** — botão no painel (Estudantes/Academias) que gera uma
-  senha temporária, para suporte manual enquanto não há fluxo por e-mail.
+- [x] **Redefinição de senha pelo admin** — feito: botão de chave em Estudantes e Academias gera
+  uma senha temporária de 8 caracteres, mostrada uma única vez.
 - [x] **Allowlist de domínios por IES conveniada** — feito (tabela `universities`). Falta o
   código de verificação por e-mail no cadastro com senha.
   Antes: allowlist de domínios por universidade
@@ -25,37 +25,43 @@ Itens decididos durante o desenvolvimento do MVP, em ordem sugerida de prioridad
 
 ## App nativo (lojas)
 
-- [ ] GPS real no lugar da localização mockada (campus fixo).
-- [ ] Leitura de QR code real na recepção da academia (camera + QR por academia).
+- [x] Localização real (geolocator), com o campus quando o aluno não libera.
+- [x] QR + código de entrada por visita, validado pela recepção no painel ("Validar entrada").
+  Falta: leitura pela câmera no painel (hoje a recepção digita ou usa leitor USB de QR).
 - [ ] Notificações push (lembrete de treino, confirmação de check-in, avisos da operação).
 - [ ] Publicação: Google Play (US$ 25 únicos, .aab assinado) e App Store
   (US$ 99/ano + build macOS via Codemagic/TestFlight).
 
 ## Painel web
 
-- [ ] **Versão mobile/responsiva do painel** — hoje o layout é de desktop (menu lateral fixo
-  e tabelas largas). Adaptar para celular: menu lateral vira drawer/menu inferior, métricas
-  empilham, tabelas viram cards ou ganham rolagem horizontal. Vale para academia e admin —
-  o dono da academia vai querer conferir os repasses pelo celular.
-- [ ] **QR code real por academia** — o painel exibe/imprime o QR da academia (recepção);
-  o app escaneia para fazer o check-in. Fecha o ciclo anti-fraude de presença física.
+- [x] **Versão mobile/responsiva do painel** — feito (drawer, métricas em 2 colunas, tabelas com rolagem).
+- [x] **Portal da faculdade (IES)** — feito: login da IES, adesão, uso, fatura do mês e lista de alunos.
 - [ ] **Relatório mensal automático por e-mail** para a academia (extrato PDF/CSV no
   fechamento do mês).
 - [ ] **Métricas de negócio no admin** — evolução de assinantes, churn, MRR de assinaturas
   vs. repasses mês a mês.
 
+## App do aluno
+
+- [x] Meta semanal com sequência de semanas e resumo do mês.
+- [x] Pausar e retomar o plano (férias).
+- [x] Cidade natal e filtro por cidade no Explorar.
+- [x] Academias favoritas e horário mais tranquilo de cada academia.
+
 ## Qualidade (valor de TCC)
 
 - [x] **Testes automatizados no backend (pytest)** — começados: auth, IES conveniada, subsídio e
-  teto de visitas pagas (`backend/tests`). Faltam tier e anti-fraude.
-- [ ] **CI no GitHub Actions** — a cada push: testes do backend + `flutter analyze` dos
-  três projetos.
+  teto de visitas pagas, portal da IES, senha temporária, meta, favoritas, cidade, horário vazio,
+  pausa e código de entrada (`backend/tests`, 22 testes). Faltam tier e anti-fraude.
+- [x] **CI no GitHub Actions** — testes do backend a cada push. Falta `flutter analyze`.
 
 ## Plataforma
 
 - [ ] Fotos das academias em storage permanente (Cloudflare R2/S3) — hoje o disco do Railway
   é efêmero e as fotos enviadas pelo admin se perdem em redeploy.
-- [ ] Pagamentos reais das assinaturas (PIX/cartão — ex.: Mercado Pago, Stripe, Asaas).
+- [ ] Pagamentos reais das assinaturas (PIX/cartão — ex.: Asaas ou Mercado Pago). O checkout
+  simulado já existe no app; falta trocar a simulação pela chamada ao gateway e criar a
+  assinatura só no webhook de pagamento confirmado.
 - [x] Título das abas e nome ao instalar no celular ("UniHub" / "UniHub Painel").
 - [ ] Monitoramento e alertas de erro (ex.: Sentry) + backups automáticos do PostgreSQL.
 - [ ] Termos de uso e política de privacidade (LGPD) — obrigatórios para as lojas.

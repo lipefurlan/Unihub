@@ -290,3 +290,21 @@ void showApiError(BuildContext context, Object error) {
       : 'Erro inesperado. Tente novamente.';
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
+
+/// Limita a largura e alinha à esquerda (dentro de ListView, um
+/// ConstrainedBox sozinho é esticado até a largura toda).
+class MaxWidth extends StatelessWidget {
+  const MaxWidth({super.key, required this.maxWidth, required this.child});
+
+  final double maxWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: child,
+        ),
+      );
+}

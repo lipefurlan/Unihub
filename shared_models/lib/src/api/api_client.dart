@@ -8,11 +8,12 @@ import '../models/payout.dart';
 import '../models/plan.dart';
 import '../models/student.dart';
 import '../models/subscription.dart';
+import '../models/university.dart';
 import 'api_exception.dart';
 
 class AuthResult {
   final String accessToken;
-  final String role; // student | gym
+  final String role; // student | gym | admin | ies
 
   const AuthResult({required this.accessToken, required this.role});
 }
@@ -131,14 +132,52 @@ class ApiClient {
         return Student.fromJson(res.data as Map<String, dynamic>);
       });
 
+  Future<Student> updateMyProfile({int? weeklyGoal, String? homeCity, bool clearHomeCity = false}) =>
+      _run(() async {
+        final res = await _dio.put('/students/me', data: {
+          'weekly_goal': ?weeklyGoal,
+          if (homeCity != null || clearHomeCity) 'home_city': homeCity,
+        });
+        return Student.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<StudentStats> getMyStats() => _run(() async {
+        final res = await _dio.get('/students/me/stats');
+        return StudentStats.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<List<Gym>> getMyFavorites() => _run(() async {
+        final res = await _dio.get('/students/me/favorites');
+        return (res.data as List).map((g) => Gym.fromJson(g as Map<String, dynamic>)).toList();
+      });
+
+  Future<void> setFavorite(int gymId, bool favorite) => _run(() async {
+        if (favorite) {
+          await _dio.put('/students/me/favorites/$gymId');
+        } else {
+          await _dio.delete('/students/me/favorites/$gymId');
+        }
+      });
+
+  Future<List<String>> getGymCities() => _run(() async {
+        final res = await _dio.get('/gyms/cities');
+        return (res.data as List).cast<String>();
+      });
+
+  Future<GymBusyHours> getGymBusyHours(int gymId) => _run(() async {
+        final res = await _dio.get('/gyms/$gymId/busy-hours');
+        return GymBusyHours.fromJson(res.data as Map<String, dynamic>);
+      });
+
   Future<List<Plan>> getPlans() => _run(() async {
         final res = await _dio.get('/plans');
         return (res.data as List).map((p) => Plan.fromJson(p as Map<String, dynamic>)).toList();
       });
 
-  Future<List<Gym>> getGyms({String? modality, String? search}) => _run(() async {
+  Future<List<Gym>> getGyms({String? modality, String? search, String? city}) => _run(() async {
         final res = await _dio.get('/gyms', queryParameters: {
           'modality': ?modality,
+          'city': ?city,
           if (search != null && search.isNotEmpty) 'search': search,
         });
         return (res.data as List).map((g) => Gym.fromJson(g as Map<String, dynamic>)).toList();
@@ -199,6 +238,12 @@ class ApiClient {
         return (res.data as List)
             .map((s) => GymStudentRow.fromJson(s as Map<String, dynamic>))
             .toList();
+      });
+
+  /// Recepção valida o código de entrada mostrado pelo aluno.
+  Future<EntryValidation> validateEntryCode(String code) => _run(() async {
+        final res = await _dio.post('/gyms/me/checkins/validate', data: {'code': code});
+        return EntryValidation.fromJson(res.data as Map<String, dynamic>);
       });
 
   Future<List<Payout>> getGymPayouts() => _run(() async {
@@ -266,6 +311,34 @@ class ApiClient {
   Future<AdminPayoutRow> markPayoutPaid(int gymId, String referenceMonth) => _run(() async {
         final res = await _dio.post('/admin/payouts/$gymId/$referenceMonth/mark-paid');
         return AdminPayoutRow.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  /// Gera senha temporária (suporte manual); a API devolve a senha uma vez.
+  Future<String> generateTemporaryPassword({int? studentId, int? gymId}) => _run(() async {
+        final path = studentId != null
+            ? '/admin/students/$studentId/temporary-password'
+            : '/admin/gyms/$gymId/temporary-password';
+        final res = await _dio.post(path);
+        return res.data['temporary_password'] as String;
+      });
+
+  // ------------------------------------------------ portal da IES
+
+  Future<UniversityProfile> getUniversityMe() => _run(() async {
+        final res = await _dio.get('/ies/me');
+        return UniversityProfile.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<UniversityOverview> getUniversityOverview() => _run(() async {
+        final res = await _dio.get('/ies/me/overview');
+        return UniversityOverview.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<List<UniversityStudentRow>> getUniversityStudents() => _run(() async {
+        final res = await _dio.get('/ies/me/students');
+        return (res.data as List)
+            .map((s) => UniversityStudentRow.fromJson(s as Map<String, dynamic>))
+            .toList();
       });
 
   Future<List<AdminStudentRow>> getAdminStudents() => _run(() async {

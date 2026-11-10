@@ -14,5 +14,6 @@ export 'src/models/payout.dart';
 export 'src/models/plan.dart';
 export 'src/models/student.dart';
 export 'src/models/subscription.dart';
+export 'src/models/university.dart';
 export 'src/theme/formatters.dart';
 export 'src/theme/unihub_theme.dart';

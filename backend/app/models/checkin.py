@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,6 +24,10 @@ class CheckIn(Base):
     # MAX_PAID_CHECKINS_PER_MONTH, somando todas as academias) geram repasse;
     # as seguintes entram com repasse zero e is_paid = False.
     is_paid: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    # Código de entrada da visita (QR mostrado pelo aluno, lido pela recepção).
+    # Vale só para esta visita, como um ingresso; validated_at = entrada confirmada.
+    entry_code: Mapped[str | None] = mapped_column(String(12), index=True)
+    validated_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     student: Mapped["Student"] = relationship(back_populates="checkins")  # noqa: F821
     gym: Mapped["Gym"] = relationship(back_populates="checkins")  # noqa: F821

@@ -5,6 +5,7 @@ import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
 import '../widgets/common.dart';
+import '../widgets/temporary_password.dart';
 
 /// Base de assinantes da plataforma (somente leitura).
 class AdminStudentsScreen extends ConsumerStatefulWidget {
@@ -135,6 +136,7 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
                     numeric: true,
                     onSort: _onSort,
                   ),
+                  const DataColumn(label: Text('')),
                 ],
                 rows: [
                   for (final s in rows)
@@ -153,6 +155,22 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
                           Text(
                             '${s.totalCheckins}',
                             style: UniHubStyles.money(size: 14),
+                          ),
+                        ),
+                        DataCell(
+                          IconButton(
+                            tooltip: 'Gerar senha temporária',
+                            icon: const Icon(
+                              LucideIcons.keyRound,
+                              size: 18,
+                              color: UniHubColors.textSecondary,
+                            ),
+                            onPressed: () => generateTemporaryPassword(
+                              context,
+                              ref,
+                              accountName: s.name,
+                              studentId: s.id,
+                            ),
                           ),
                         ),
                       ],

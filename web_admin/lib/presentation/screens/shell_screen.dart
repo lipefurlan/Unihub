@@ -18,6 +18,7 @@ class ShellScreen extends ConsumerWidget {
 
   static const _gymItems = [
     (path: '/dashboard', icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
+    (path: '/entrada', icon: LucideIcons.qrCode, label: 'Validar entrada'),
     (path: '/students', icon: LucideIcons.users, label: 'Alunos'),
     (path: '/finance', icon: LucideIcons.receipt, label: 'Financeiro'),
     (path: '/settings', icon: LucideIcons.settings, label: 'Configurações'),
@@ -34,10 +35,20 @@ class ShellScreen extends ConsumerWidget {
     (path: '/admin/students', icon: LucideIcons.users, label: 'Estudantes'),
   ];
 
+  static const _universityItems = [
+    (path: '/ies/overview', icon: LucideIcons.layoutDashboard, label: 'Visão geral'),
+    (path: '/ies/students', icon: LucideIcons.graduationCap, label: 'Alunos'),
+  ];
+
+  static String? _suffix(PanelSession? session) =>
+      session?.isAdmin == true ? 'operação' : (session?.isUniversity == true ? 'faculdade' : null);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider).value;
-    final items = session?.isAdmin == true ? _adminItems : _gymItems;
+    final items = session?.isAdmin == true
+        ? _adminItems
+        : (session?.isUniversity == true ? _universityItems : _gymItems);
 
     final sidebar = _SidebarContent(
       session: session,
@@ -57,10 +68,7 @@ class ShellScreen extends ConsumerWidget {
     if (isMobile(context)) {
       return Scaffold(
         appBar: AppBar(
-          title: UniHubWordmark(
-            size: 18,
-            suffix: session?.isAdmin == true ? 'operação' : null,
-          ),
+          title: UniHubWordmark(size: 18, suffix: ShellScreen._suffix(session)),
           bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
             child: Divider(),
@@ -122,10 +130,7 @@ class _SidebarContent extends StatelessWidget {
               UniHubSpacing.x6,
               UniHubSpacing.x2,
             ),
-            child: UniHubWordmark(
-              size: 20,
-              suffix: session?.isAdmin == true ? 'operação' : null,
-            ),
+            child: UniHubWordmark(size: 20, suffix: ShellScreen._suffix(session)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),

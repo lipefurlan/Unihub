@@ -57,6 +57,7 @@ Future<void> startCheckinFlow(BuildContext context, WidgetRef ref, Gym gym) asyn
     final checkin = await ref.read(apiClientProvider).createCheckin(gym.id);
     // Histórico e contadores mudaram
     ref.invalidate(myCheckinsProvider);
+    ref.invalidate(myStatsProvider);
     if (context.mounted) context.push('/checkin-success', extra: checkin);
   } on ApiException catch (e) {
     if (!context.mounted) return;

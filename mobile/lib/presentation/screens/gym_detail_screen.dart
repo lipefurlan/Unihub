@@ -18,9 +18,31 @@ class GymDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final student = ref.watch(authProvider).value;
     final gymAsync = ref.watch(gymDetailProvider(gymId));
+    final isFavorite = ref.watch(favoritesProvider).value?.any((g) => g.id == gymId) ?? false;
+    final busyAsync = ref.watch(gymBusyHoursProvider(gymId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Academia')),
+      appBar: AppBar(
+        title: const Text('Academia'),
+        actions: [
+          IconButton(
+            tooltip: isFavorite ? 'Tirar das favoritas' : 'Favoritar',
+            icon: Icon(
+              LucideIcons.heart,
+              color: isFavorite ? UniHubColors.accent : UniHubColors.textSecondary,
+              fill: isFavorite ? 1 : 0,
+            ),
+            onPressed: () async {
+              try {
+                await ref.read(apiClientProvider).setFavorite(gymId, !isFavorite);
+                ref.invalidate(favoritesProvider);
+              } catch (e) {
+                if (context.mounted) showApiError(context, e);
+              }
+            },
+          ),
+        ],
+      ),
       body: gymAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => EmptyState(icon: LucideIcons.wifiOff, message: '$e'),
@@ -60,6 +82,10 @@ class GymDetailScreen extends ConsumerWidget {
               const SizedBox(height: UniHubSpacing.x6),
               const Divider(),
               const SizedBox(height: UniHubSpacing.x6),
+              busyAsync.maybeWhen(
+                data: (busy) => _BusyHours(busy: busy),
+                orElse: () => const SizedBox.shrink(),
+              ),
               const SectionTitle('Modalidades'),
               const SizedBox(height: UniHubSpacing.x3),
               Wrap(
@@ -129,6 +155,72 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(text, style: const TextStyle(fontSize: 14)),
         ),
+      ],
+    );
+  }
+}
+
+
+/// Movimento por hora (check-ins UniHub) e a faixa mais tranquila.
+class _BusyHours extends StatelessWidget {
+  const _BusyHours({required this.busy});
+
+  final GymBusyHours busy;
+
+  @override
+  Widget build(BuildContext context) {
+    if (busy.quietestStart == null) return const SizedBox.shrink();
+    final peak = busy.peak == 0 ? 1 : busy.peak;
+    final hours = busy.checkinsByHour.keys.toList()..sort();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle('Movimento'),
+        const SizedBox(height: UniHubSpacing.x2),
+        Text(
+          'Mais tranquilo entre ${busy.quietestStart}h e ${busy.quietestEnd}h',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: UniHubSpacing.x4),
+        SizedBox(
+          height: 56,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final h in hours)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                    child: Container(
+                      height: 4 + 52 * busy.checkinsByHour[h]! / peak,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        color: h >= busy.quietestStart! && h < busy.quietestEnd!
+                            ? UniHubColors.accent
+                            : UniHubColors.border,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('${hours.first}h', style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary)),
+            Text('${hours.last + 1}h', style: const TextStyle(fontSize: 11, color: UniHubColors.textSecondary)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'Check-ins de alunos UniHub nos últimos 30 dias',
+          style: TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+        ),
+        const SizedBox(height: UniHubSpacing.x6),
+        const Divider(),
+        const SizedBox(height: UniHubSpacing.x6),
       ],
     );
   }

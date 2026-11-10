@@ -14,8 +14,10 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final student = ref.watch(authProvider).value;
-    final checkins = ref.watch(myCheckinsProvider);
+    final stats = ref.watch(myStatsProvider);
     final gyms = ref.watch(gymsProvider);
+    final favorites = ref.watch(favoritesProvider).value ?? const <Gym>[];
+    ref.watch(userLocationProvider); // redesenha quando a localização chega
 
     return Scaffold(
       appBar: AppBar(title: const UniHubWordmark()),
@@ -23,6 +25,8 @@ class HomeTab extends ConsumerWidget {
         color: UniHubColors.accent,
         onRefresh: () async {
           ref.invalidate(myCheckinsProvider);
+          ref.invalidate(myStatsProvider);
+          ref.invalidate(favoritesProvider);
           ref.invalidate(gymsProvider);
           await ref.read(authProvider.notifier).refreshProfile();
         },
@@ -47,30 +51,32 @@ class HomeTab extends ConsumerWidget {
               label: const Text('Fazer check-in'),
             ),
             const SizedBox(height: UniHubSpacing.x8),
-            const SectionTitle('Seu mês'),
-            const SizedBox(height: UniHubSpacing.x4),
-            checkins.when(
+            SectionTitle(
+              'Sua semana',
+              action: TextButton(
+                onPressed: () => showWeeklyGoalPicker(context, ref, student?.weeklyGoal ?? 3),
+                child: const Text('Mudar meta'),
+              ),
+            ),
+            const SizedBox(height: UniHubSpacing.x2),
+            stats.when(
               loading: () => const LinearProgressIndicator(minHeight: 2),
               error: (e, _) => Text('$e',
                   style: const TextStyle(color: UniHubColors.textSecondary, fontSize: 13)),
-              data: (list) {
-                final now = DateTime.now();
-                final monthCheckins = list
-                    .where((c) => c.timestamp.year == now.year && c.timestamp.month == now.month)
-                    .toList();
-                final visited = monthCheckins.map((c) => c.gym.id).toSet().length;
-                return Row(
-                  children: [
-                    Expanded(
-                      child: StatBlock(value: '${monthCheckins.length}', label: 'Check-ins no mês'),
-                    ),
-                    Expanded(
-                      child: StatBlock(value: '$visited', label: 'Academias visitadas'),
-                    ),
-                  ],
-                );
-              },
+              data: (st) => _WeekGoalCard(stats: st),
             ),
+            if (favorites.isNotEmpty) ...[
+              const SizedBox(height: UniHubSpacing.x8),
+              const SectionTitle('Suas favoritas'),
+              for (final (i, gym) in favorites.indexed) ...[
+                if (i > 0) const Divider(),
+                GymTile(
+                  gym: gym,
+                  covered: planCoversGym(student, gym),
+                  onTap: () => context.push('/gyms/${gym.id}'),
+                ),
+              ],
+            ],
             const SizedBox(height: UniHubSpacing.x8),
             SectionTitle(
               'Academias próximas',
@@ -139,6 +145,7 @@ class _PlanSection extends ConsumerWidget {
     }
 
     final plan = subscription.plan;
+    final paused = subscription.status == 'paused';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,8 +184,14 @@ class _PlanSection extends ConsumerWidget {
         ),
         const SizedBox(height: UniHubSpacing.x1),
         Text(
-          'Renova em ${formatDate(subscription.renewalDate)}',
-          style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+          paused
+              ? 'Pausado: sem cobrança e sem check-in até você retomar'
+              : 'Renova em ${formatDate(subscription.renewalDate)}',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: paused ? FontWeight.w600 : FontWeight.w400,
+            color: paused ? UniHubColors.accent : UniHubColors.textSecondary,
+          ),
         ),
         if (plan.hasRunningCoach) ...[
           const SizedBox(height: UniHubSpacing.x2),
@@ -193,5 +206,145 @@ class _PlanSection extends ConsumerWidget {
         ],
       ],
     );
+  }
+}
+
+
+/// Meta da semana em bolinhas, sequência de semanas e resumo do mês.
+class _WeekGoalCard extends StatelessWidget {
+  const _WeekGoalCard({required this.stats});
+
+  final StudentStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = stats.weekCheckins;
+    final goal = stats.weeklyGoal;
+    final remaining = (goal - done).clamp(0, goal);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < goal; i++)
+              Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.only(right: UniHubSpacing.x2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i < done ? UniHubColors.accent : Colors.transparent,
+                  border: Border.all(
+                    color: i < done ? UniHubColors.accent : UniHubColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: i < done
+                    ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                    : null,
+              ),
+            const Spacer(),
+            if (stats.streakWeeks > 0)
+              Row(
+                children: [
+                  const Icon(LucideIcons.flame, size: 18, color: UniHubColors.accent),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${stats.streakWeeks} ${stats.streakWeeks == 1 ? 'semana' : 'semanas'}',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: UniHubSpacing.x2),
+        Text(
+          remaining == 0
+              ? 'Meta da semana batida: $done de $goal treinos.'
+              : 'Faltam $remaining ${remaining == 1 ? 'treino' : 'treinos'} para a meta de $goal na semana.',
+          style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+        ),
+        const SizedBox(height: UniHubSpacing.x4),
+        // Últimas semanas: barra cheia = meta batida
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final w in stats.lastWeeks)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Container(
+                    height: 6 + 30 * (w.checkins / (goal == 0 ? 1 : goal)).clamp(0, 1.4),
+                    decoration: BoxDecoration(
+                      color: w.goalMet ? UniHubColors.accent : UniHubColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Últimas 8 semanas',
+          style: TextStyle(fontSize: 11, color: UniHubColors.textSecondary),
+        ),
+        const SizedBox(height: UniHubSpacing.x6),
+        Row(
+          children: [
+            Expanded(child: StatBlock(value: '${stats.monthCheckins}', label: 'Treinos no mês')),
+            Expanded(child: StatBlock(value: '${stats.monthGyms}', label: 'Academias no mês')),
+          ],
+        ),
+        if (stats.monthTopGym != null) ...[
+          const SizedBox(height: UniHubSpacing.x3),
+          Text(
+            'Mais frequentada: ${stats.monthTopGym}',
+            style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Escolha da meta semanal (1 a 7 treinos).
+Future<void> showWeeklyGoalPicker(BuildContext context, WidgetRef ref, int current) async {
+  final goal = await showModalBottomSheet<int>(
+    context: context,
+    backgroundColor: UniHubColors.background,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(UniHubSpacing.x6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Quantos treinos por semana?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: UniHubSpacing.x4),
+            Wrap(
+              spacing: UniHubSpacing.x2,
+              children: [
+                for (var g = 1; g <= 7; g++)
+                  ChoiceChip(
+                    label: Text('$g'),
+                    selected: g == current,
+                    onSelected: (_) => Navigator.of(sheetContext).pop(g),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (goal == null || goal == current) return;
+  try {
+    await ref.read(apiClientProvider).updateMyProfile(weeklyGoal: goal);
+    ref.invalidate(myStatsProvider);
+    await ref.read(authProvider.notifier).refreshProfile();
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
   }
 }

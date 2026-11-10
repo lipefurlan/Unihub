@@ -232,8 +232,7 @@ class _MonthDetailState extends ConsumerState<_MonthDetail> {
             ),
             const SizedBox(height: UniHubSpacing.x2),
             Text(
-              '${detail.totalCheckins} check-ins × valor por check-in = '
-              '${formatBRL(detail.totalAmount)} a receber',
+              _summary(detail),
               style: const TextStyle(
                 fontSize: 13,
                 color: UniHubColors.textSecondary,
@@ -311,4 +310,15 @@ class _MonthDetailState extends ConsumerState<_MonthDetail> {
       },
     );
   }
+}
+
+
+/// "9 visitas remuneradas × R$ 8,00 = R$ 72,00 a receber · 2 acima do teto"
+String _summary(PayoutDetail detail) {
+  final paid = detail.checkins.where((c) => c.isPaid).toList();
+  final unpaid = detail.checkins.length - paid.length;
+  final perVisit = paid.isEmpty ? 0.0 : paid.first.payoutAmountRecorded;
+  final base = '${paid.length} visitas remuneradas × ${formatBRL(perVisit)} = '
+      '${formatBRL(detail.totalAmount)} a receber';
+  return unpaid > 0 ? '$base · $unpaid acima do teto do aluno, sem repasse' : base;
 }

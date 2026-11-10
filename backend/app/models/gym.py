@@ -29,3 +29,9 @@ class Gym(Base):
 
     checkins: Mapped[list["CheckIn"]] = relationship(back_populates="gym")  # noqa: F821
     payouts: Mapped[list["Payout"]] = relationship(back_populates="gym")  # noqa: F821
+
+    @property
+    def city(self) -> str:
+        """Cidade tirada do endereço ("... - Bairro, Campinas/SP" -> "Campinas")."""
+        tail = self.address.rsplit(",", 1)[-1]
+        return tail.split("/")[0].strip()
