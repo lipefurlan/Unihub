@@ -19,12 +19,48 @@ def _new_entry_code() -> str:
     return "".join(secrets.choice(ENTRY_CODE_ALPHABET) for _ in range(ENTRY_CODE_LENGTH))
 
 
+def _check_plan_restrictions(db: Session, student: Student, plan) -> None:
+    now = datetime.now()
+    hhmm = now.strftime("%H:%M")
+    if plan.allowed_from and plan.allowed_until:
+        start, end = plan.allowed_from, plan.allowed_until
+        # Janela que vira a meia-noite (ex.: 22:00 às 06:00)
+        inside = start <= hhmm < end if start <= end else (hhmm >= start or hhmm < end)
+        if not inside:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"O {plan.name} vale das {start} às {end}.",
+            )
+
+    def count_since(since: datetime) -> int:
+        return db.scalar(
+            select(func.count(CheckIn.id)).where(
+                CheckIn.student_id == student.id, CheckIn.timestamp >= since
+            )
+        ) or 0
+
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if plan.max_checkins_per_day and count_since(day_start) >= plan.max_checkins_per_day:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"O {plan.name} permite {plan.max_checkins_per_day} check-in(s) por dia.",
+        )
+    month_start = day_start.replace(day=1)
+    if plan.max_checkins_per_month and count_since(month_start) >= plan.max_checkins_per_month:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Você já usou os {plan.max_checkins_per_month} check-ins do mês do {plan.name}.",
+        )
+
+
 def create_checkin(db: Session, student: Student, gym_id: int) -> CheckIn:
     """Registra um check-in aplicando as regras de negócio do UniHub.
 
     Regras:
     1. O estudante precisa de assinatura ativa.
-    2. O tier do plano deve ser >= ao tier mínimo da academia.
+    2. O plano precisa cobrir a academia: pelo tier mínimo dela ou, se a
+       operação escolheu as academias do plano, pela lista do plano.
+    2b. Restrições do plano: horário permitido, check-ins por dia e por mês.
     3. Anti-fraude: no máximo 1 check-in por aluno/academia dentro da janela
        configurada (default 3h).
     4. O valor de repasse da academia é congelado (snapshot) no check-in.
@@ -53,14 +89,16 @@ def create_checkin(db: Session, student: Student, gym_id: int) -> CheckIn:
             detail="Você não possui uma assinatura ativa. Assine um plano para fazer check-in.",
         )
 
-    if subscription.plan.tier < gym.min_plan_tier:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Seu plano não dá acesso a esta academia. "
-                f"É necessário o Plano {gym.min_plan_tier} ou superior."
-            ),
+    plan = subscription.plan
+    if not plan.covers_gym(gym):
+        detail = (
+            f"Seu plano não dá acesso a esta academia. É necessário o Plano {gym.min_plan_tier} ou superior."
+            if plan.all_gyms
+            else f"A {gym.name} não está incluída no {plan.name}."
         )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+    _check_plan_restrictions(db, student, plan)
 
     window_hours = settings.checkin_antifraud_window_hours
     window_start = datetime.now() - timedelta(hours=window_hours)

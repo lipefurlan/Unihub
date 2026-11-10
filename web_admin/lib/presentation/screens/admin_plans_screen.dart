@@ -134,9 +134,13 @@ class _PlanRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final plan = row.plan;
     final details = [
+      plan.allGyms
+          ? 'Todas as academias'
+          : '${plan.gymIds.length} academia${plan.gymIds.length == 1 ? '' : 's'}',
       if (plan.includedCategories.isNotEmpty) plan.includedCategories.join(', '),
       if (plan.hasRunningCoach) 'com assessoria de corrida',
     ].join(' · ');
+    final restrictions = plan.restrictionLines;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: UniHubSpacing.x4),
@@ -174,6 +178,13 @@ class _PlanRow extends StatelessWidget {
                   Text(
                     details,
                     style: const TextStyle(fontSize: 12.5, color: UniHubColors.textTertiary),
+                  ),
+                ],
+                if (restrictions.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Restrições: ${restrictions.join(' · ')}',
+                    style: const TextStyle(fontSize: 12.5, color: UniHubColors.accentPressed),
                   ),
                 ],
               ],
@@ -250,7 +261,14 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
   late final TextEditingController _price;
   late final TextEditingController _description;
   late final TextEditingController _categories;
+  late final TextEditingController _perMonth;
+  late final TextEditingController _perDay;
+  late final TextEditingController _from;
+  late final TextEditingController _until;
+  late final TextEditingController _note;
   late bool _runningCoach;
+  late bool _allGyms;
+  late Set<int> _gymIds;
   bool _saving = false;
 
   bool get isNew => widget.plan == null;
@@ -264,11 +282,36 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
     _description = TextEditingController(text: p?.benefitsDescription ?? '');
     _categories = TextEditingController(text: p?.includedCategories.join(', ') ?? '');
     _runningCoach = p?.hasRunningCoach ?? false;
+    _allGyms = p?.allGyms ?? true;
+    _gymIds = {...?p?.gymIds};
+    _perMonth = TextEditingController(text: p?.maxCheckinsPerMonth?.toString() ?? '');
+    _perDay = TextEditingController(text: p?.maxCheckinsPerDay?.toString() ?? '');
+    _from = TextEditingController(text: p?.allowedFrom ?? '');
+    _until = TextEditingController(text: p?.allowedUntil ?? '');
+    _note = TextEditingController(text: p?.restrictionsNote ?? '');
   }
+
+  static final _hhmm = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
+
+  String? _limitValidator(String? v, int max) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return null;
+    final n = int.tryParse(t);
+    return n == null || n < 1 || n > max ? 'De 1 a $max' : null;
+  }
+
+  String? _hourValidator(String? v, TextEditingController other) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return other.text.trim().isEmpty ? null : 'Preencha os dois';
+    return _hhmm.hasMatch(t) ? null : 'Use HH:MM';
+  }
+
+  int? _intOrNull(TextEditingController c) => int.tryParse(c.text.trim());
+  String? _textOrNull(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
 
   @override
   void dispose() {
-    for (final c in [_name, _price, _description, _categories]) {
+    for (final c in [_name, _price, _description, _categories, _perMonth, _perDay, _from, _until, _note]) {
       c.dispose();
     }
     super.dispose();
@@ -279,6 +322,12 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_allGyms && _gymIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escolha ao menos uma academia para o plano.')),
+      );
+      return;
+    }
     setState(() => _saving = true);
 
     final data = <String, dynamic>{
@@ -291,6 +340,13 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
           .where((c) => c.isNotEmpty)
           .toList(),
       'has_running_coach': _runningCoach,
+      'all_gyms': _allGyms,
+      'gym_ids': _gymIds.toList()..sort(),
+      'max_checkins_per_month': _intOrNull(_perMonth),
+      'max_checkins_per_day': _intOrNull(_perDay),
+      'allowed_from': _textOrNull(_from),
+      'allowed_until': _textOrNull(_until),
+      'restrictions_note': _note.text.trim(),
     };
 
     try {
@@ -306,6 +362,46 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Widget _gymPicker() {
+    final gymsAsync = ref.watch(adminGymsProvider);
+    return gymsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(UniHubSpacing.x4),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Text('$e', style: const TextStyle(color: UniHubColors.error)),
+      data: (gyms) {
+        final sorted = [...gyms]..sort((a, b) => a.name.compareTo(b.name));
+        return Container(
+          constraints: const BoxConstraints(maxHeight: 220),
+          decoration: BoxDecoration(
+            border: Border.all(color: UniHubColors.border),
+            borderRadius: UniHubRadius.brMd,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (final g in sorted)
+                CheckboxListTile(
+                  dense: true,
+                  value: _gymIds.contains(g.id),
+                  onChanged: (v) => setState(() => v == true ? _gymIds.add(g.id) : _gymIds.remove(g.id)),
+                  title: Text(g.name, style: const TextStyle(fontSize: 14)),
+                  subtitle: Text(
+                    g.isActive ? g.address : 'Desativada · ${g.address}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: UniHubColors.textSecondary),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -360,6 +456,84 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
                 ),
+                const SizedBox(height: UniHubSpacing.x4),
+                const _SectionLabel('Academias incluídas'),
+                SwitchListTile(
+                  value: _allGyms,
+                  onChanged: (v) => setState(() => _allGyms = v),
+                  title: const Text('Todas as academias parceiras', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text(
+                    'Desligue para escolher uma a uma',
+                    style: TextStyle(fontSize: 12, color: UniHubColors.textSecondary),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (!_allGyms) _gymPicker(),
+                const SizedBox(height: UniHubSpacing.x4),
+                const _SectionLabel('Restrições'),
+                const SizedBox(height: UniHubSpacing.x2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _perMonth,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-ins por mês',
+                          helperText: 'Em branco: sem limite',
+                        ),
+                        validator: (v) => _limitValidator(v, 100),
+                      ),
+                    ),
+                    const SizedBox(width: UniHubSpacing.x4),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _perDay,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-ins por dia',
+                          helperText: 'Em branco: sem limite',
+                        ),
+                        validator: (v) => _limitValidator(v, 10),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: UniHubSpacing.x4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _from,
+                        decoration: const InputDecoration(
+                          labelText: 'Vale a partir de',
+                          hintText: '06:00',
+                          helperText: 'Em branco: qualquer horário',
+                        ),
+                        validator: (v) => _hourValidator(v, _until),
+                      ),
+                    ),
+                    const SizedBox(width: UniHubSpacing.x4),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _until,
+                        decoration: const InputDecoration(labelText: 'Até', hintText: '14:00'),
+                        validator: (v) => _hourValidator(v, _from),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: UniHubSpacing.x4),
+                TextFormField(
+                  controller: _note,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Outras restrições (aparece no app)',
+                    hintText: 'Ex.: não inclui aulas com personal',
+                  ),
+                ),
               ],
             ),
           ),
@@ -375,6 +549,25 @@ class _PlanFormDialogState extends ConsumerState<_PlanFormDialog> {
           child: Text(isNew ? 'Criar plano' : 'Salvar'),
         ),
       ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+        color: UniHubColors.accentPressed,
+      ),
     );
   }
 }

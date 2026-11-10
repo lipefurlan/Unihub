@@ -344,6 +344,17 @@ def _plan_row(db: Session, plan: Plan) -> AdminPlanRow:
     return row
 
 
+# Campos que aceitam null para "sem restrição"
+_NULLABLE_PLAN_FIELDS = {"max_checkins_per_month", "max_checkins_per_day", "allowed_from", "allowed_until"}
+
+
+def _valid_gym_ids(db: Session, ids: list[int]) -> list[int]:
+    if not ids:
+        return []
+    found = set(db.scalars(select(Gym.id).where(Gym.id.in_(ids))).all())
+    return sorted(found)
+
+
 def _clean_categories(values: list[str]) -> list[str]:
     return [v.strip().lower() for v in values if v.strip()]
 
@@ -367,6 +378,13 @@ def create_plan(payload: AdminPlanCreate, db: Session = Depends(get_db)):
         benefits_description=payload.benefits_description.strip(),
         has_running_coach=payload.has_running_coach,
         is_active=payload.is_active,
+        all_gyms=payload.all_gyms,
+        gym_ids=_valid_gym_ids(db, payload.gym_ids),
+        max_checkins_per_month=payload.max_checkins_per_month,
+        max_checkins_per_day=payload.max_checkins_per_day,
+        allowed_from=payload.allowed_from,
+        allowed_until=payload.allowed_until,
+        restrictions_note=payload.restrictions_note.strip(),
     )
     db.add(plan)
     db.commit()
@@ -389,8 +407,12 @@ def update_plan(plan_id: int, payload: AdminPlanUpdate, db: Session = Depends(ge
         data["included_categories"] = _clean_categories(data["included_categories"])
     if data.get("name") is not None:
         data["name"] = data["name"].strip()
+    if data.get("gym_ids") is not None:
+        data["gym_ids"] = _valid_gym_ids(db, data["gym_ids"])
+    if data.get("restrictions_note") is not None:
+        data["restrictions_note"] = data["restrictions_note"].strip()
     for field, value in data.items():
-        if value is not None:
+        if value is not None or field in _NULLABLE_PLAN_FIELDS:
             setattr(plan, field, value)
 
     db.commit()
