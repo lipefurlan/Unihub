@@ -32,7 +32,7 @@ class HomeTab extends ConsumerWidget {
           children: [
             Text(
               'Olá, ${student?.name.split(' ').first ?? ''}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              style: UniHubFonts.display(fontSize: 24, fontWeight: FontWeight.w800),
             ),
             Text(
               student?.university ?? '',
@@ -165,7 +165,7 @@ class _PlanSection extends ConsumerWidget {
             ),
             Text(
               plan.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              style: UniHubFonts.display(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(width: UniHubSpacing.x3),
             Text(

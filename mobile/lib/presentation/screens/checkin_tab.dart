@@ -30,9 +30,9 @@ class CheckinTab extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(UniHubSpacing.x6),
             children: [
-              const Text(
+              Text(
                 'Onde você vai treinar hoje?',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style: UniHubFonts.display(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: UniHubSpacing.x2),
               const Text(

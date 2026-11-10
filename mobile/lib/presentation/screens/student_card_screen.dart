@@ -67,7 +67,7 @@ class StudentCardScreen extends ConsumerWidget {
                           Text(
                             student.name,
                             style:
-                                const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                                UniHubFonts.display(fontSize: 18, fontWeight: FontWeight.w800),
                           ),
                           Text(
                             student.university,

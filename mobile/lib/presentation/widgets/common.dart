@@ -28,9 +28,9 @@ class SectionTitle extends StatelessWidget {
       children: [
         Text(
           text,
-          style: const TextStyle(
+          style: UniHubFonts.display(
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             color: UniHubColors.textPrimary,
           ),
         ),

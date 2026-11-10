@@ -45,7 +45,7 @@ class GymDetailScreen extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: UniHubSpacing.x6),
-              Text(gym.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              Text(gym.name, style: UniHubFonts.display(fontSize: 22, fontWeight: FontWeight.w800)),
               const SizedBox(height: UniHubSpacing.x2),
               AccessBadge(covered: covered, minTier: gym.minPlanTier),
               const SizedBox(height: UniHubSpacing.x6),

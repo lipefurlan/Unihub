@@ -54,7 +54,7 @@ class PageTitle extends StatelessWidget {
             children: [
               Text(
                 text,
-                style: const TextStyle(
+                style: UniHubFonts.display(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
