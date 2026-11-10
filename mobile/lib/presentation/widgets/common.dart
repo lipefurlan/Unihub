@@ -4,31 +4,14 @@ import 'package:shared_models/shared_models.dart';
 
 import '../../domain/access_rules.dart';
 
-/// Logotipo tipográfico: "UniHub" com ponto laranja — hierarquia por
-/// tipografia, sem ilustrações.
+/// Logo oficial do UniHub (nome com o símbolo das meias-luas).
 class UniHubWordmark extends StatelessWidget {
   const UniHubWordmark({super.key, this.size = 22});
 
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          fontSize: size,
-          fontWeight: FontWeight.w800,
-          color: UniHubColors.textPrimary,
-          letterSpacing: -0.5,
-          fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-        ),
-        children: const [
-          TextSpan(text: 'UniHub'),
-          TextSpan(text: '.', style: TextStyle(color: UniHubColors.accent)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => UniHubLogo(height: size);
 }
 
 /// Título de seção: tipografia forte no lugar de caixas.
