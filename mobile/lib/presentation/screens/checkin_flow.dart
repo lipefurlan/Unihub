@@ -23,9 +23,9 @@ Future<void> startCheckinFlow(BuildContext context, WidgetRef ref, Gym gym) asyn
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Confirmar check-in',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            style: UniHubFonts.display(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: UniHubSpacing.x2),
           Text(
