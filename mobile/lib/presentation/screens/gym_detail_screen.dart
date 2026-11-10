@@ -51,21 +51,19 @@ class GymDetailScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(UniHubSpacing.x6),
             children: [
-              if (gym.photoUrl != null)
-                ClipRRect(
-                  borderRadius: UniHubRadius.brMd,
-                  child: Image.network(
-                    gym.photoUrl!,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      height: 180,
-                      color: UniHubColors.surface,
-                      child: const Icon(LucideIcons.dumbbell,
-                          size: 40, color: UniHubColors.textSecondary),
-                    ),
-                  ),
+              ClipRRect(
+                borderRadius: UniHubRadius.brLg,
+                child: SizedBox(
+                  height: 180,
+                  child: gym.photoUrl == null
+                      ? GymCover(name: gym.name, large: true)
+                      : Image.network(
+                          gym.photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => GymCover(name: gym.name, large: true),
+                        ),
                 ),
+              ),
               const SizedBox(height: UniHubSpacing.x6),
               Text(gym.name, style: UniHubFonts.display(fontSize: 22, fontWeight: FontWeight.w800)),
               const SizedBox(height: UniHubSpacing.x2),

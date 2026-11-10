@@ -9,6 +9,7 @@ class UniHubLogo extends StatelessWidget {
     super.key,
     this.height = 22,
     this.onDark = false,
+    this.onOrange = false,
     this.semanticLabel = 'UniHub',
   });
 
@@ -19,12 +20,19 @@ class UniHubLogo extends StatelessWidget {
 
   /// Versão com nome branco e meia-lua laranja para fundos escuros.
   final bool onDark;
+
+  /// Versão sobre laranja: nome branco, crescentes branco e preto.
+  final bool onOrange;
   final String semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      onDark ? 'assets/brand/unihub-logo-fundo-escuro.png' : 'assets/brand/unihub-logo-cor.png',
+      onOrange
+          ? 'assets/brand/unihub-logo-fundo-laranja.png'
+          : onDark
+              ? 'assets/brand/unihub-logo-fundo-escuro.png'
+              : 'assets/brand/unihub-logo-cor.png',
       package: 'shared_models',
       height: height,
       width: height * aspectRatio,

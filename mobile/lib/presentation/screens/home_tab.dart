@@ -54,12 +54,6 @@ class HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: UniHubSpacing.x8),
             _PlanSection(student: student),
-            const SizedBox(height: UniHubSpacing.x8),
-            FilledButton.icon(
-              onPressed: () => context.go('/checkin'),
-              icon: const Icon(LucideIcons.scanLine, size: 18),
-              label: const Text('Fazer check-in'),
-            ),
             if (toRate != null) ...[
               const SizedBox(height: UniHubSpacing.x4),
               _RateLastVisit(checkin: toRate),
@@ -72,7 +66,7 @@ class HomeTab extends ConsumerWidget {
                 child: const Text('Mudar meta'),
               ),
             ),
-            const SizedBox(height: UniHubSpacing.x2),
+            const SizedBox(height: UniHubSpacing.x3),
             stats.when(
               loading: () => const LinearProgressIndicator(minHeight: 2),
               error: (e, _) => Text('$e',
@@ -131,6 +125,9 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
+/// Card do plano: bloco laranja com textura de papel, o botão de check-in
+/// dentro e a cortina de meias-luas na borda de baixo (a peça mais forte da
+/// tela, como no manual).
 class _PlanSection extends ConsumerWidget {
   const _PlanSection({required this.student});
 
@@ -139,88 +136,114 @@ class _PlanSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscription = student?.subscription;
+    const onOrange = Colors.white;
+    final soft = Colors.white.withValues(alpha: 0.86);
+
+    final whiteButton = FilledButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: UniHubColors.accentPressed,
+    ).copyWith(
+      overlayColor: WidgetStatePropertyAll(UniHubColors.accentSoft.withValues(alpha: 0.5)),
+    );
 
     if (subscription == null) {
       // Estudante recém-cadastrado: precisa escolher um plano
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionTitle('Meu plano'),
-          const SizedBox(height: UniHubSpacing.x3),
-          const Text(
-            'Você ainda não tem um plano ativo.',
-            style: TextStyle(fontSize: 14, color: UniHubColors.textSecondary),
-          ),
-          const SizedBox(height: UniHubSpacing.x3),
-          OutlinedButton(
-            onPressed: () => context.push('/plans'),
-            child: const Text('Escolher plano'),
-          ),
-        ],
+      return BrandBlock(
+        footer: const HalfMoonCurtain(radius: 10, onOrange: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const BrandLabel('Meu plano', color: onOrange),
+            const SizedBox(height: UniHubSpacing.x2),
+            Text(
+              'Escolha seu plano e treine perto do campus',
+              style: UniHubFonts.display(fontSize: 22, fontWeight: FontWeight.w800, color: onOrange),
+            ),
+            const SizedBox(height: UniHubSpacing.x5),
+            FilledButton(
+              style: whiteButton,
+              onPressed: () => context.push('/plans'),
+              child: const Text('Escolher plano'),
+            ),
+          ],
+        ),
       );
     }
 
     final plan = subscription.plan;
     final paused = subscription.status == 'paused';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionTitle(
-          'Meu plano',
-          action: TextButton(
-            onPressed: () => context.push('/plans'),
-            child: const Text('Gerenciar'),
-          ),
-        ),
-        const SizedBox(height: UniHubSpacing.x2),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              margin: const EdgeInsets.only(right: UniHubSpacing.x2),
-              decoration: BoxDecoration(
-                color: Color(int.parse(plan.color.replaceFirst('#', '0xFF'))),
-                shape: BoxShape.circle,
+    return BrandBlock(
+      // Pausado: bloco preto café, sem o laranja de "vamos treinar"
+      color: paused ? UniHubColors.textPrimary : UniHubColors.accent,
+      footer: HalfMoonCurtain(radius: 10, onOrange: !paused),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              BrandLabel(paused ? 'Plano pausado' : 'Meu plano', color: onOrange),
+              const Spacer(),
+              InkWell(
+                borderRadius: UniHubRadius.brPill,
+                onTap: () => context.push('/plans'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    children: [
+                      Text('Gerenciar',
+                          style: UniHubFonts.text(
+                              fontSize: 13, fontWeight: FontWeight.w700, color: onOrange)),
+                      const Icon(LucideIcons.chevronRight, size: 16, color: onOrange),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: UniHubSpacing.x2),
+          Text(
+            plan.name,
+            style: UniHubFonts.display(fontSize: 26, fontWeight: FontWeight.w900, color: onOrange),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                formatBRL(subscription.amount),
+                style: UniHubStyles.money(size: 17, weight: FontWeight.w800, color: onOrange),
+              ),
+              Text(' por mês', style: UniHubFonts.text(fontSize: 13, color: soft)),
+              const Spacer(),
+              Text(
+                paused ? 'Sem cobrança' : 'Renova em ${formatDate(subscription.renewalDate)}',
+                style: UniHubFonts.text(fontSize: 12.5, color: soft),
+              ),
+            ],
+          ),
+          if (plan.hasRunningCoach) ...[
+            const SizedBox(height: UniHubSpacing.x2),
             Text(
-              plan.name,
-              style: UniHubFonts.display(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(width: UniHubSpacing.x3),
-            Text(
-              '${formatBRL(subscription.amount)}/mês',
-              style: UniHubStyles.money(size: 14, weight: FontWeight.w500,
-                  color: UniHubColors.textSecondary),
+              'Inclui plano de treino mensal com assessoria de corrida',
+              style: UniHubFonts.text(fontSize: 13, fontWeight: FontWeight.w600, color: onOrange),
             ),
           ],
-        ),
-        const SizedBox(height: UniHubSpacing.x1),
-        Text(
-          paused
-              ? 'Pausado: sem cobrança e sem check-in até você retomar'
-              : 'Renova em ${formatDate(subscription.renewalDate)}',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: paused ? FontWeight.w600 : FontWeight.w400,
-            color: paused ? UniHubColors.accent : UniHubColors.textSecondary,
-          ),
-        ),
-        if (plan.hasRunningCoach) ...[
-          const SizedBox(height: UniHubSpacing.x2),
-          const Text(
-            'Inclui plano de treino mensal com assessoria de corrida',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: UniHubColors.accent,
+          const SizedBox(height: UniHubSpacing.x5),
+          if (paused)
+            Text(
+              'Sem check-in até você retomar o plano.',
+              style: UniHubFonts.text(fontSize: 13, color: soft),
+            )
+          else
+            FilledButton.icon(
+              style: whiteButton,
+              onPressed: () => context.go('/checkin'),
+              icon: const Icon(LucideIcons.scanLine, size: 18),
+              label: const Text('Fazer check-in'),
             ),
-          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -242,22 +265,20 @@ class _WeekGoalCard extends StatelessWidget {
       children: [
         Row(
           children: [
+            // Treino feito vira o símbolo: os dois lados se encontram
             for (var i = 0; i < goal; i++)
-              Container(
-                width: 28,
-                height: 28,
-                margin: const EdgeInsets.only(right: UniHubSpacing.x2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i < done ? UniHubColors.accent : Colors.transparent,
-                  border: Border.all(
-                    color: i < done ? UniHubColors.accent : UniHubColors.border,
-                    width: 1.5,
-                  ),
-                ),
+              Padding(
+                padding: const EdgeInsets.only(right: UniHubSpacing.x2),
                 child: i < done
-                    ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
-                    : null,
+                    ? const UniHubSymbol(height: 28)
+                    : Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: UniHubColors.border, width: 1.5),
+                        ),
+                      ),
               ),
             const Spacer(),
             if (stats.streakWeeks > 0)
@@ -292,8 +313,8 @@ class _WeekGoalCard extends StatelessWidget {
                   child: Container(
                     height: 6 + 30 * (w.checkins / (goal == 0 ? 1 : goal)).clamp(0, 1.4),
                     decoration: BoxDecoration(
-                      color: w.goalMet ? UniHubColors.accent : UniHubColors.border,
-                      borderRadius: BorderRadius.circular(2),
+                      color: w.goalMet ? UniHubColors.accent : UniHubColors.accentSoft,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ),
                 ),
