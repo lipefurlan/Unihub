@@ -36,7 +36,7 @@ class ProfileTab extends ConsumerWidget {
                   children: [
                     Text(
                       student.name,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: UniHubFonts.display(fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                     Text(
                       student.university,

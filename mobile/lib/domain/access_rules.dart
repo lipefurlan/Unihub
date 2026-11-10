@@ -5,7 +5,7 @@ import 'package:shared_models/shared_models.dart';
 
 /// O plano do estudante cobre a academia?
 bool planCoversGym(Student? student, Gym gym) =>
-    (student?.planTier ?? 0) >= gym.minPlanTier;
+    student?.subscription?.plan.coversGym(gym.id, gym.minPlanTier) ?? false;
 
 /// Campus da Unicamp: posição usada quando o navegador não libera a localização.
 const campusLatitude = -22.8170;

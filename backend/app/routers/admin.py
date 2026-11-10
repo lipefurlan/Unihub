@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.security import get_current_admin, hash_password
-from app.models import Admin, CheckIn, Gym, Payout, Student, Subscription, University
+from app.models import Admin, CheckIn, Gym, Payout, Plan, Student, Subscription, University
 from app.schemas.admin import (
     AdminGymCreate,
     AdminGymRow,
@@ -21,6 +21,7 @@ from app.schemas.admin import (
     TemporaryPasswordOut,
     TopGym,
 )
+from app.schemas.plan import AdminPlanCreate, AdminPlanRow, AdminPlanUpdate
 from app.services import payout_service
 
 router = APIRouter(prefix="/admin", tags=["Operação UniHub"], dependencies=[Depends(get_current_admin)])
@@ -327,3 +328,93 @@ def reset_gym_password(gym_id: int, db: Session = Depends(get_db)):
     gym.password_hash = hash_password(password)
     db.commit()
     return TemporaryPasswordOut(temporary_password=password)
+
+
+# ---------------------------------------------------------------- Planos
+
+
+def _plan_row(db: Session, plan: Plan) -> AdminPlanRow:
+    subscribers = db.scalar(
+        select(func.count(Subscription.id)).where(
+            Subscription.plan_id == plan.id, Subscription.status == "active"
+        )
+    )
+    row = AdminPlanRow.model_validate(plan)
+    row.active_subscribers = subscribers or 0
+    return row
+
+
+# Campos que aceitam null para "sem restrição"
+_NULLABLE_PLAN_FIELDS = {"max_checkins_per_month", "max_checkins_per_day", "allowed_from", "allowed_until"}
+
+
+def _valid_gym_ids(db: Session, ids: list[int]) -> list[int]:
+    if not ids:
+        return []
+    found = set(db.scalars(select(Gym.id).where(Gym.id.in_(ids))).all())
+    return sorted(found)
+
+
+def _clean_categories(values: list[str]) -> list[str]:
+    return [v.strip().lower() for v in values if v.strip()]
+
+
+@router.get("/plans", response_model=list[AdminPlanRow])
+def list_plans_admin(db: Session = Depends(get_db)):
+    """Todos os planos, inclusive os desativados, com o número de assinantes."""
+    plans = db.scalars(select(Plan).order_by(Plan.tier)).all()
+    return [_plan_row(db, p) for p in plans]
+
+
+@router.post("/plans", response_model=AdminPlanRow, status_code=status.HTTP_201_CREATED)
+def create_plan(payload: AdminPlanCreate, db: Session = Depends(get_db)):
+    next_tier = (db.scalar(select(func.max(Plan.tier))) or 0) + 1
+    plan = Plan(
+        name=payload.name.strip(),
+        monthly_price=Decimal(str(payload.monthly_price)),
+        tier=next_tier,
+        color="#FF5A1F",
+        included_categories=_clean_categories(payload.included_categories),
+        benefits_description=payload.benefits_description.strip(),
+        has_running_coach=payload.has_running_coach,
+        is_active=payload.is_active,
+        all_gyms=payload.all_gyms,
+        gym_ids=_valid_gym_ids(db, payload.gym_ids),
+        max_checkins_per_month=payload.max_checkins_per_month,
+        max_checkins_per_day=payload.max_checkins_per_day,
+        allowed_from=payload.allowed_from,
+        allowed_until=payload.allowed_until,
+        restrictions_note=payload.restrictions_note.strip(),
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return _plan_row(db, plan)
+
+
+@router.put("/plans/{plan_id}", response_model=AdminPlanRow)
+def update_plan(plan_id: int, payload: AdminPlanUpdate, db: Session = Depends(get_db)):
+    """Edita o plano. Novo preço vale para novas assinaturas e trocas de plano;
+    quem já assina mantém o valor contratado até trocar."""
+    plan = db.get(Plan, plan_id)
+    if plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
+
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("monthly_price") is not None:
+        data["monthly_price"] = Decimal(str(data["monthly_price"]))
+    if data.get("included_categories") is not None:
+        data["included_categories"] = _clean_categories(data["included_categories"])
+    if data.get("name") is not None:
+        data["name"] = data["name"].strip()
+    if data.get("gym_ids") is not None:
+        data["gym_ids"] = _valid_gym_ids(db, data["gym_ids"])
+    if data.get("restrictions_note") is not None:
+        data["restrictions_note"] = data["restrictions_note"].strip()
+    for field, value in data.items():
+        if value is not None or field in _NULLABLE_PLAN_FIELDS:
+            setattr(plan, field, value)
+
+    db.commit()
+    db.refresh(plan)
+    return _plan_row(db, plan)

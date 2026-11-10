@@ -22,7 +22,7 @@ def create_subscription(
     db: Session = Depends(get_db),
 ):
     plan = db.get(Plan, payload.plan_id)
-    if plan is None:
+    if plan is None or not plan.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
 
     if student.active_subscription is not None:
@@ -61,7 +61,8 @@ def update_subscription(
 
     if payload.plan_id is not None:
         plan = db.get(Plan, payload.plan_id)
-        if plan is None:
+        # Plano desativado só aceita quem já está nele (não entra gente nova)
+        if plan is None or (not plan.is_active and plan.id != subscription.plan_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plano não encontrado.")
         subscription.plan_id = plan.id
         subscription.amount = student_price(plan.monthly_price, student.university_ref)

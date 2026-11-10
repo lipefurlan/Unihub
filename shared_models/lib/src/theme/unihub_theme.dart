@@ -1,22 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Tokens de cor do design system UniHub.
+/// Tokens de cor do design system UniHub, conforme o manual de identidade
+/// visual 2.0.
 ///
-/// Identidade: minimalista, branca, com laranja forte como única cor de
-/// acento — usado com parcimônia (botões primários, valores em destaque,
-/// estado ativo). Sem gradientes, sem roxo, sem azul.
+/// Laranja UniHub é a plataforma (botões, símbolo, destaques) e o preto café
+/// é o universitário (textos). Papel, laranja claro e laranja brasa são cores
+/// de apoio. Sem gradientes, sem roxo, sem azul.
 abstract final class UniHubColors {
   static const background = Color(0xFFFFFFFF);
-  static const surface = Color(0xFFF7F7F8); // só para separar seções quando necessário
-  static const accent = Color(0xFFFF5A1F);
-  static const accentPressed = Color(0xFFE64A19);
-  static const textPrimary = Color(0xFF1A1A1A);
-  static const textSecondary = Color(0xFF6B6B6B);
-  static const divider = Color(0xFFECECEE);
-  static const border = Color(0xFFE2E2E5);
+  static const surface = Color(0xFFFFF7F2); // Papel: separa seções e cartões
+  static const accent = Color(0xFFFF5A1F); // Laranja UniHub
+  static const accentPressed = Color(0xFFD9430C); // Laranja brasa: toque e textos laranja pequenos
+  static const accentSoft = Color(0xFFFFE3D4); // Laranja claro: etiquetas e destaque suave
+  static const textPrimary = Color(0xFF1F1410); // Preto café
+  static const textSecondary = Color(0xFF6F5E55);
+  static const textTertiary = Color(0xFF8A766B);
+  static const divider = Color(0xFFEADCD2);
+  static const border = Color(0xFFE2D2C7);
   static const error = Color(0xFFB42318); // uso funcional, apenas em mensagens de erro
   static const success = Color(0xFF1A7F37); // uso funcional, apenas em confirmações
+}
+
+/// Tipografia do manual: Red Hat Display para títulos, números e marca;
+/// Red Hat Text para textos, botões e rótulos.
+abstract final class UniHubFonts {
+  static TextStyle display({
+    double? fontSize,
+    FontWeight fontWeight = FontWeight.w800,
+    Color? color,
+    double? letterSpacing,
+    List<FontFeature>? fontFeatures,
+  }) =>
+      GoogleFonts.redHatDisplay(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        fontFeatures: fontFeatures,
+      );
+
+  static TextStyle text({
+    double? fontSize,
+    FontWeight fontWeight = FontWeight.w400,
+    Color? color,
+    double? letterSpacing,
+  }) =>
+      GoogleFonts.redHatText(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
 }
 
 /// Escala de espaçamento (múltiplos de 4): whitespace generoso é a regra.
@@ -32,12 +67,15 @@ abstract final class UniHubSpacing {
   static const double x12 = 48;
 }
 
-/// Raio máximo permitido pelo design system: 8px.
+/// Raios: 6 e 8 px para campos e cartões; botões são em pílula, como no
+/// manual.
 abstract final class UniHubRadius {
   static const double sm = 6;
   static const double md = 8;
+  static const double pill = 999;
   static final BorderRadius brSm = BorderRadius.circular(sm);
   static final BorderRadius brMd = BorderRadius.circular(md);
+  static final BorderRadius brPill = BorderRadius.circular(pill);
 }
 
 /// Estilos auxiliares que não cabem no ThemeData.
@@ -45,8 +83,9 @@ abstract final class UniHubStyles {
   /// Números tabulares para valores financeiros alinhados em tabelas.
   static const tabularNumbers = [FontFeature.tabularFigures()];
 
-  static TextStyle money({double size = 16, FontWeight weight = FontWeight.w600, Color? color}) =>
-      GoogleFonts.inter(
+  /// Valores em Red Hat Display, com algarismos alinhados (manual: números).
+  static TextStyle money({double size = 16, FontWeight weight = FontWeight.w700, Color? color}) =>
+      UniHubFonts.display(
         fontSize: size,
         fontWeight: weight,
         color: color ?? UniHubColors.textPrimary,
@@ -57,10 +96,26 @@ abstract final class UniHubStyles {
 /// Tema único do UniHub — usado pelo app do estudante e pelo painel web.
 abstract final class UniHubTheme {
   static ThemeData light() {
-    final textTheme = GoogleFonts.interTextTheme().apply(
-      bodyColor: UniHubColors.textPrimary,
-      displayColor: UniHubColors.textPrimary,
-    );
+    final base = GoogleFonts.redHatTextTextTheme();
+    TextStyle? heading(TextStyle? style, FontWeight weight) => style == null
+        ? null
+        : GoogleFonts.redHatDisplay(textStyle: style, fontWeight: weight);
+    final textTheme = base
+        .copyWith(
+          displayLarge: heading(base.displayLarge, FontWeight.w900),
+          displayMedium: heading(base.displayMedium, FontWeight.w900),
+          displaySmall: heading(base.displaySmall, FontWeight.w800),
+          headlineLarge: heading(base.headlineLarge, FontWeight.w800),
+          headlineMedium: heading(base.headlineMedium, FontWeight.w800),
+          headlineSmall: heading(base.headlineSmall, FontWeight.w800),
+          titleLarge: heading(base.titleLarge, FontWeight.w700),
+          titleMedium: heading(base.titleMedium, FontWeight.w600),
+          titleSmall: heading(base.titleSmall, FontWeight.w600),
+        )
+        .apply(
+          bodyColor: UniHubColors.textPrimary,
+          displayColor: UniHubColors.textPrimary,
+        );
 
     return ThemeData(
       useMaterial3: true,
@@ -82,9 +137,9 @@ abstract final class UniHubTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: UniHubFonts.display(
           fontSize: 18,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: UniHubColors.textPrimary,
         ),
       ),
@@ -97,13 +152,13 @@ abstract final class UniHubTheme {
           ),
           foregroundColor: const WidgetStatePropertyAll(Colors.white),
           textStyle: WidgetStatePropertyAll(
-            GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+            UniHubFonts.text(fontSize: 15, fontWeight: FontWeight.w700),
           ),
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: UniHubSpacing.x6, vertical: 14),
           ),
           shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: UniHubRadius.brMd),
+            RoundedRectangleBorder(borderRadius: UniHubRadius.brPill),
           ),
           elevation: const WidgetStatePropertyAll(0),
         ),
@@ -112,15 +167,15 @@ abstract final class UniHubTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: UniHubColors.textPrimary,
           side: const BorderSide(color: UniHubColors.border, width: 1),
-          textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: UniHubFonts.text(fontSize: 15, fontWeight: FontWeight.w700),
           padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x6, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: UniHubRadius.brMd),
+          shape: RoundedRectangleBorder(borderRadius: UniHubRadius.brPill),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: UniHubColors.accent,
-          textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+          foregroundColor: UniHubColors.accentPressed,
+          textStyle: UniHubFonts.text(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -140,8 +195,8 @@ abstract final class UniHubTheme {
           borderRadius: UniHubRadius.brMd,
           borderSide: const BorderSide(color: UniHubColors.error, width: 1),
         ),
-        labelStyle: GoogleFonts.inter(fontSize: 14, color: UniHubColors.textSecondary),
-        hintStyle: GoogleFonts.inter(fontSize: 14, color: UniHubColors.textSecondary),
+        labelStyle: UniHubFonts.text(fontSize: 14, color: UniHubColors.textSecondary),
+        hintStyle: UniHubFonts.text(fontSize: 14, color: UniHubColors.textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: UniHubSpacing.x4,
           vertical: UniHubSpacing.x3,
@@ -159,7 +214,7 @@ abstract final class UniHubTheme {
         indicatorColor: Colors.transparent,
         height: 64,
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => GoogleFonts.inter(
+          (states) => UniHubFonts.text(
             fontSize: 11,
             fontWeight:
                 states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
@@ -179,7 +234,7 @@ abstract final class UniHubTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: UniHubColors.textPrimary,
-        contentTextStyle: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+        contentTextStyle: UniHubFonts.text(fontSize: 14, color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: UniHubRadius.brMd),
       ),
@@ -187,20 +242,20 @@ abstract final class UniHubTheme {
         backgroundColor: UniHubColors.background,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: UniHubRadius.brMd),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: UniHubFonts.display(
           fontSize: 17,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: UniHubColors.textPrimary,
         ),
-        contentTextStyle: GoogleFonts.inter(fontSize: 14, color: UniHubColors.textSecondary),
+        contentTextStyle: UniHubFonts.text(fontSize: 14, color: UniHubColors.textSecondary),
       ),
       dataTableTheme: DataTableThemeData(
-        headingTextStyle: GoogleFonts.inter(
+        headingTextStyle: UniHubFonts.text(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: UniHubColors.textSecondary,
         ),
-        dataTextStyle: GoogleFonts.inter(fontSize: 14, color: UniHubColors.textPrimary),
+        dataTextStyle: UniHubFonts.text(fontSize: 14, color: UniHubColors.textPrimary),
         dividerThickness: 1,
         horizontalMargin: 0,
       ),

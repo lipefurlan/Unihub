@@ -188,6 +188,21 @@ class _PlanManageScreenState extends ConsumerState<PlanManageScreen> {
                             style: const TextStyle(
                                 fontSize: 13, color: UniHubColors.textSecondary),
                           ),
+                          if (!plan.allGyms) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${plan.gymIds.length} academia${plan.gymIds.length == 1 ? '' : 's'} incluída${plan.gymIds.length == 1 ? '' : 's'}',
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700, color: UniHubColors.accentPressed),
+                            ),
+                          ],
+                          if (plan.restrictionLines.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              plan.restrictionLines.join(' · '),
+                              style: const TextStyle(fontSize: 12, color: UniHubColors.textTertiary),
+                            ),
+                          ],
                         ],
                       ),
                     ),

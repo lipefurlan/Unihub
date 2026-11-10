@@ -8,6 +8,7 @@ import 'providers.dart';
 import 'screens/admin_gyms_screen.dart';
 import 'screens/admin_overview_screen.dart';
 import 'screens/admin_payouts_screen.dart';
+import 'screens/admin_plans_screen.dart';
 import 'screens/admin_students_screen.dart';
 import 'screens/challenges_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -123,6 +124,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AdminPayoutsScreen(),
           ),
           GoRoute(
+            path: '/admin/planos',
+            builder: (context, state) => const AdminPlansScreen(),
+          ),
+          GoRoute(
             path: '/admin/students',
             builder: (context, state) => const AdminStudentsScreen(),
           ),
@@ -143,15 +148,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/ies/students',
             builder: (context, state) => const IesStudentsScreen(),
-          ),
-          GoRoute(
-            path: '/ies/desafios',
-            builder: (context, state) => const ChallengesScreen(),
-          ),
-          GoRoute(
-            path: '/ies/desafios/:id',
-            builder: (context, state) =>
-                ChallengeDetailScreen(challengeId: int.parse(state.pathParameters['id']!)),
           ),
         ],
       ),

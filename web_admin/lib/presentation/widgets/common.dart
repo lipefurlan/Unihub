@@ -1,42 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:shared_models/shared_models.dart';
 
-/// Logotipo tipográfico do painel.
+/// Logo do painel: a marca oficial do UniHub, com um rótulo opcional ao
+/// lado ("painel", "operação", nome da faculdade...).
 class UniHubWordmark extends StatelessWidget {
-  const UniHubWordmark({super.key, this.size = 20, this.suffix});
+  const UniHubWordmark({super.key, this.size = 20, this.suffix, this.onDark = false});
 
   final double size;
   final String? suffix;
 
+  /// Fundo escuro (menu da operação): nome em branco.
+  final bool onDark;
+
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          fontSize: size,
-          fontWeight: FontWeight.w800,
-          color: UniHubColors.textPrimary,
-          letterSpacing: -0.5,
-          fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-        ),
-        children: [
-          const TextSpan(text: 'UniHub'),
-          const TextSpan(
-            text: '.',
-            style: TextStyle(color: UniHubColors.accent),
-          ),
-          if (suffix != null)
-            TextSpan(
-              text: '  $suffix',
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        UniHubLogo(height: size, onDark: onDark),
+        if (suffix != null) ...[
+          SizedBox(width: size * 0.5),
+          Flexible(
+            child: Text(
+              suffix!,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: size * 0.65,
                 fontWeight: FontWeight.w500,
-                color: UniHubColors.textSecondary,
-                letterSpacing: 0,
+                color: onDark ? UniHubColors.accentSoft : UniHubColors.textSecondary,
               ),
             ),
+          ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -60,7 +57,7 @@ class PageTitle extends StatelessWidget {
             children: [
               Text(
                 text,
-                style: const TextStyle(
+                style: UniHubFonts.display(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),

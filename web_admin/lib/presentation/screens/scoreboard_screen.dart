@@ -70,13 +70,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                   children: [
                     Row(
                       children: [
-                        const Text.rich(
-                          TextSpan(children: [
-                            TextSpan(text: 'UniHub'),
-                            TextSpan(text: '.', style: TextStyle(color: UniHubColors.accent)),
-                          ]),
-                          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                        ),
+                        const UniHubLogo(height: 22, onDark: true),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x3, vertical: 6),

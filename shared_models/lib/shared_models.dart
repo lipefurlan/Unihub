@@ -17,4 +17,5 @@ export 'src/models/student.dart';
 export 'src/models/subscription.dart';
 export 'src/models/university.dart';
 export 'src/theme/formatters.dart';
+export 'src/theme/unihub_logo.dart';
 export 'src/theme/unihub_theme.dart';
