@@ -19,7 +19,7 @@ Future<UserLocation> fetchUserLocation() async {
         timeLimit: Duration(seconds: 8),
       ),
     );
-    return UserLocation(position.latitude, position.longitude, isReal: true);
+    return UserLocation(position.latitude, position.longitude, isReal: true, label: 'Localização atual');
   } catch (_) {
     return UserLocation.campus;
   }

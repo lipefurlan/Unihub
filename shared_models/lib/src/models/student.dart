@@ -97,3 +97,117 @@ class StudentStats {
         monthTopGym: json['month_top_gym'] as String?,
       );
 }
+
+
+/// Selo de conquista (conquistado ou em progresso).
+class AchievementBadge {
+  final String code;
+  final String title;
+  final String description;
+  final int target;
+  final int progress;
+  final bool achieved;
+
+  const AchievementBadge({
+    required this.code,
+    required this.title,
+    required this.description,
+    required this.target,
+    required this.progress,
+    required this.achieved,
+  });
+
+  factory AchievementBadge.fromJson(Map<String, dynamic> json) => AchievementBadge(
+        code: json['code'] as String,
+        title: json['title'] as String,
+        description: json['description'] as String,
+        target: json['target'] as int,
+        progress: json['progress'] as int,
+        achieved: json['achieved'] as bool,
+      );
+}
+
+class Achievements {
+  final int totalCheckins;
+  final int gymsVisited;
+  final int currentStreak;
+  final int bestStreak;
+  final List<AchievementBadge> badges;
+
+  const Achievements({
+    required this.totalCheckins,
+    required this.gymsVisited,
+    required this.currentStreak,
+    required this.bestStreak,
+    required this.badges,
+  });
+
+  factory Achievements.fromJson(Map<String, dynamic> json) => Achievements(
+        totalCheckins: json['total_checkins'] as int,
+        gymsVisited: json['gyms_visited'] as int,
+        currentStreak: json['current_streak'] as int,
+        bestStreak: json['best_streak'] as int,
+        badges: (json['badges'] as List)
+            .map((b) => AchievementBadge.fromJson(b as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+class ChallengeRow {
+  final int position;
+  final int universityId;
+  final String university;
+  final int subscribers;
+  final int checkins;
+  final double score; // check-ins do mês por assinante
+
+  const ChallengeRow({
+    required this.position,
+    required this.universityId,
+    required this.university,
+    required this.subscribers,
+    required this.checkins,
+    required this.score,
+  });
+
+  factory ChallengeRow.fromJson(Map<String, dynamic> json) => ChallengeRow(
+        position: json['position'] as int,
+        universityId: json['university_id'] as int,
+        university: json['university'] as String,
+        subscribers: json['subscribers'] as int,
+        checkins: json['checkins'] as int,
+        score: (json['score'] as num).toDouble(),
+      );
+}
+
+/// Desafio do mês entre faculdades.
+class Challenge {
+  final String title;
+  final String description;
+  final DateTime endsOn;
+  final int? myUniversityId;
+  final int myCheckins;
+  final List<ChallengeRow> ranking;
+
+  const Challenge({
+    required this.title,
+    required this.description,
+    required this.endsOn,
+    this.myUniversityId,
+    required this.myCheckins,
+    required this.ranking,
+  });
+
+  ChallengeRow? get myRow => ranking.where((r) => r.universityId == myUniversityId).firstOrNull;
+
+  factory Challenge.fromJson(Map<String, dynamic> json) => Challenge(
+        title: json['title'] as String,
+        description: json['description'] as String,
+        endsOn: DateTime.parse(json['ends_on'] as String),
+        myUniversityId: json['my_university_id'] as int?,
+        myCheckins: json['my_checkins'] as int,
+        ranking: (json['ranking'] as List)
+            .map((r) => ChallengeRow.fromJson(r as Map<String, dynamic>))
+            .toList(),
+      );
+}

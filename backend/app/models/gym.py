@@ -30,6 +30,11 @@ class Gym(Base):
     checkins: Mapped[list["CheckIn"]] = relationship(back_populates="gym")  # noqa: F821
     payouts: Mapped[list["Payout"]] = relationship(back_populates="gym")  # noqa: F821
 
+    # Nota média dos alunos: preenchida por engagement_service.attach_ratings
+    # antes de serializar (não é coluna; evita uma consulta por academia)
+    rating_avg = None
+    rating_count = 0
+
     @property
     def city(self) -> str:
         """Cidade tirada do endereço ("... - Bairro, Campinas/SP" -> "Campinas")."""

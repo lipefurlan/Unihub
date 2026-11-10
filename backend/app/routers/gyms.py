@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_gym
 from app.models import CheckIn, Gym
-from app.schemas.gym import GymBusyHoursOut, GymOwnerOut, GymPublicOut, GymUpdate
+from app.schemas.gym import GymBusyHoursOut, GymOwnerOut, GymPublicOut, GymUpdate, TrendingGymOut
+from app.services import engagement_service
 
 router = APIRouter(prefix="/gyms", tags=["Academias"])
 
@@ -41,7 +42,15 @@ def list_gyms(
         gyms = [g for g in gyms if search.lower() in g.name.lower()]
     if city:
         gyms = [g for g in gyms if _same_city(g.city, city)]
-    return gyms
+    return engagement_service.attach_ratings(db, gyms)
+
+
+@router.get("/trending", response_model=list[TrendingGymOut])
+def list_trending(db: Session = Depends(get_db)):
+    """Academias com mais check-ins UniHub nos últimos 7 dias."""
+    rows = engagement_service.trending_gyms(db)
+    engagement_service.attach_ratings(db, [gym for gym, _ in rows])
+    return [{"gym": gym, "recent_checkins": count} for gym, count in rows]
 
 
 @router.get("/cities", response_model=list[str])
@@ -78,7 +87,7 @@ def get_gym(gym_id: int, db: Session = Depends(get_db)):
     gym = db.get(Gym, gym_id)
     if gym is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Academia não encontrada.")
-    return gym
+    return engagement_service.attach_ratings(db, [gym])[0]
 
 
 @router.put("/{gym_id}", response_model=GymOwnerOut)

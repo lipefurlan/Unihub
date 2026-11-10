@@ -37,6 +37,8 @@ class GymDashboardOut(BaseModel):
     prev_month_revenue: float
     checkins_by_day: list[DailyCount]
     checkins_by_hour_range: list[HourRangeCount]
+    rating_avg: float | None = None  # nota média dada pelos alunos (1 a 5)
+    rating_count: int = 0
 
 
 class GymStudentRow(BaseModel):

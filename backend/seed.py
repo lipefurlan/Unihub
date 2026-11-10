@@ -323,6 +323,13 @@ def main() -> None:
                     is_paid=is_paid,
                     # Visitas antigas já passaram pela recepção
                     validated_at=ts + timedelta(minutes=random.randint(1, 5)),
+                    # ~60% das visitas avaliadas, quase sempre bem; as visitas do
+                    # João desta semana ficam sem nota para a demo mostrar o "Avaliar"
+                    rating=(
+                        random.choices([5, 4, 3, 2], weights=[50, 35, 10, 5])[0]
+                        if random.random() < 0.6 and ts < now - timedelta(days=3)
+                        else None
+                    ),
                 )
             )
             total_checkins += 1

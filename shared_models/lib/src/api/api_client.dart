@@ -169,6 +169,28 @@ class ApiClient {
         return GymBusyHours.fromJson(res.data as Map<String, dynamic>);
       });
 
+  Future<Achievements> getMyAchievements() => _run(() async {
+        final res = await _dio.get('/students/me/achievements');
+        return Achievements.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<Challenge> getChallenge() => _run(() async {
+        final res = await _dio.get('/students/me/challenge');
+        return Challenge.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<CheckIn> rateCheckin(int checkinId, int stars) => _run(() async {
+        final res = await _dio.put('/checkins/$checkinId/rating', data: {'stars': stars});
+        return CheckIn.fromJson(res.data as Map<String, dynamic>);
+      });
+
+  Future<List<TrendingGym>> getTrendingGyms() => _run(() async {
+        final res = await _dio.get('/gyms/trending');
+        return (res.data as List)
+            .map((g) => TrendingGym.fromJson(g as Map<String, dynamic>))
+            .toList();
+      });
+
   Future<List<Plan>> getPlans() => _run(() async {
         final res = await _dio.get('/plans');
         return (res.data as List).map((p) => Plan.fromJson(p as Map<String, dynamic>)).toList();

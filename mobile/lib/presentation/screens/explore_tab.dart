@@ -28,9 +28,29 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
     final location = ref.watch(userLocationProvider).value ?? UserLocation.current;
     final favoriteIds = {...?ref.watch(favoritesProvider).value?.map((g) => g.id)};
     final homeCity = student?.homeCity;
+    final trending = ref.watch(trendingGymsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Explorar')),
+      appBar: AppBar(
+        titleSpacing: UniHubSpacing.x6,
+        title: InkWell(
+          onTap: () => _chooseLocation(gymsAsync.value ?? const []),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                location.isReal ? LucideIcons.locateFixed : LucideIcons.mapPin,
+                size: 18,
+                color: UniHubColors.accent,
+              ),
+              const SizedBox(width: UniHubSpacing.x2),
+              Text(location.label,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+              const Icon(LucideIcons.chevronDown, size: 18),
+            ],
+          ),
+        ),
+      ),
       body: gymsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => EmptyState(icon: LucideIcons.wifiOff, message: '$e'),
@@ -40,6 +60,8 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
           final cities = gyms.map((g) => g.city).where((c) => c.isNotEmpty).toSet().toList()
             ..sort((a, b) => a == homeCity ? -1 : (b == homeCity ? 1 : a.compareTo(b)));
 
+          final filtering =
+              _search.isNotEmpty || _modality != null || _city != null || _onlyFavorites;
           var filtered = sortByDistance(gyms);
           if (_search.isNotEmpty) {
             filtered = filtered
@@ -113,27 +135,6 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(UniHubSpacing.x6, 0, UniHubSpacing.x6, UniHubSpacing.x2),
-                child: Row(
-                  children: [
-                    Icon(
-                      location.isReal ? LucideIcons.locateFixed : LucideIcons.school,
-                      size: 14,
-                      color: UniHubColors.textSecondary,
-                    ),
-                    const SizedBox(width: UniHubSpacing.x2),
-                    Expanded(
-                      child: Text(
-                        location.isReal
-                            ? 'Distâncias a partir de onde você está'
-                            : 'Distâncias a partir do campus (localização não liberada)',
-                        style: const TextStyle(fontSize: 12, color: UniHubColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const Divider(),
               Expanded(
                 child: filtered.isEmpty
@@ -141,24 +142,115 @@ class _ExploreTabState extends ConsumerState<ExploreTab> {
                         icon: LucideIcons.searchX,
                         message: 'Nenhuma academia encontrada com esses filtros.',
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: UniHubSpacing.x6, vertical: UniHubSpacing.x2),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const Divider(),
-                        itemBuilder: (context, i) {
-                          final gym = filtered[i];
-                          return GymTile(
-                            gym: gym,
-                            covered: planCoversGym(student, gym),
-                            onTap: () => context.push('/gyms/${gym.id}'),
-                          );
-                        },
+                    : ListView(
+                        padding: const EdgeInsets.only(top: UniHubSpacing.x4, bottom: UniHubSpacing.x6),
+                        children: [
+                          // Sem filtro: vitrine como num app de descoberta
+                          if (!filtering) ...[
+                            GymCarousel(
+                              title: 'Perto de você',
+                              children: [
+                                for (final gym in filtered.take(8))
+                                  GymCard(gym: gym, onTap: () => context.push('/gyms/${gym.id}')),
+                              ],
+                            ),
+                            const SizedBox(height: UniHubSpacing.x6),
+                            ...trending.maybeWhen(
+                              data: (list) => list.isEmpty
+                                  ? const <Widget>[]
+                                  : [
+                                      GymCarousel(
+                                        title: 'Bombando nesta semana',
+                                        children: [
+                                          for (final t in list)
+                                            GymCard(
+                                              gym: t.gym,
+                                              caption: '${t.recentCheckins} check-ins na semana',
+                                              onTap: () => context.push('/gyms/${t.gym.id}'),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: UniHubSpacing.x6),
+                                    ],
+                              orElse: () => const <Widget>[],
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),
+                              child: SectionTitle('Todas as academias'),
+                            ),
+                          ],
+                          for (final (i, gym) in filtered.indexed)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: UniHubSpacing.x6),
+                              child: Column(
+                                children: [
+                                  if (i > 0) const Divider(),
+                                  GymTile(
+                                    gym: gym,
+                                    covered: planCoversGym(student, gym),
+                                    onTap: () => context.push('/gyms/${gym.id}'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+extension on _ExploreTabState {
+  /// Distâncias a partir de: localização atual, campus ou uma cidade.
+  Future<void> _chooseLocation(List<Gym> gyms) async {
+    final cities = gyms.map((g) => g.city).where((c) => c.isNotEmpty).toSet().toList()..sort();
+    final notifier = ref.read(userLocationProvider.notifier);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: UniHubColors.background,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                  UniHubSpacing.x6, UniHubSpacing.x6, UniHubSpacing.x6, UniHubSpacing.x2),
+              child: Text('Ver academias perto de',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.locateFixed, color: UniHubColors.accent),
+              title: const Text('Localização atual'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                notifier.useDevice();
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.school),
+              title: const Text('Campus'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                notifier.choose(UserLocation.campus);
+              },
+            ),
+            for (final city in cities)
+              ListTile(
+                leading: const Icon(LucideIcons.mapPin),
+                title: Text(city),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  notifier.choose(cityLocation(city, gyms));
+                },
+              ),
+            const SizedBox(height: UniHubSpacing.x4),
+          ],
+        ),
       ),
     );
   }

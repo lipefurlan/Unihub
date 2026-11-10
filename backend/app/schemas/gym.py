@@ -17,6 +17,8 @@ class GymPublicOut(BaseModel):
     opening_hours: str
     photo_url: str | None
     city: str
+    rating_avg: float | None = None
+    rating_count: int = 0
 
 
 class GymOwnerOut(GymPublicOut):
@@ -52,3 +54,8 @@ class GymBusyHoursOut(BaseModel):
     hours: list[HourCount]
     quietest_start: int | None  # início da faixa de 2h mais vazia
     quietest_end: int | None
+
+
+class TrendingGymOut(BaseModel):
+    gym: GymPublicOut
+    recent_checkins: int  # check-ins UniHub nos últimos 7 dias

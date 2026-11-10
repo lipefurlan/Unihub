@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.gym import GymPublicOut
 
@@ -18,6 +18,11 @@ class CheckInOut(BaseModel):
     gym: GymPublicOut
     timestamp: datetime
     plan_tier_at_checkin: int
+    rating: int | None = None
+
+
+class CheckInRate(BaseModel):
+    stars: int = Field(ge=1, le=5)
 
 
 class CheckInCreatedOut(CheckInOut):

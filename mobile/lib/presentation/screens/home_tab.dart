@@ -7,6 +7,8 @@ import 'package:shared_models/shared_models.dart';
 import '../../domain/access_rules.dart';
 import '../providers.dart';
 import '../widgets/common.dart';
+import '../widgets/rating_sheet.dart';
+import 'challenge_screen.dart' show ChallengeCard;
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -17,6 +19,9 @@ class HomeTab extends ConsumerWidget {
     final stats = ref.watch(myStatsProvider);
     final gyms = ref.watch(gymsProvider);
     final favorites = ref.watch(favoritesProvider).value ?? const <Gym>[];
+    // Última visita sem nota nos últimos 3 dias: pede a avaliação
+    final toRate = ref.watch(myCheckinsProvider).value?.where((c) =>
+        c.rating == null && DateTime.now().difference(c.timestamp).inDays < 3).firstOrNull;
     ref.watch(userLocationProvider); // redesenha quando a localização chega
 
     return Scaffold(
@@ -27,6 +32,7 @@ class HomeTab extends ConsumerWidget {
           ref.invalidate(myCheckinsProvider);
           ref.invalidate(myStatsProvider);
           ref.invalidate(favoritesProvider);
+          ref.invalidate(challengeProvider);
           ref.invalidate(gymsProvider);
           await ref.read(authProvider.notifier).refreshProfile();
         },
@@ -50,6 +56,10 @@ class HomeTab extends ConsumerWidget {
               icon: const Icon(LucideIcons.scanLine, size: 18),
               label: const Text('Fazer check-in'),
             ),
+            if (toRate != null) ...[
+              const SizedBox(height: UniHubSpacing.x4),
+              _RateLastVisit(checkin: toRate),
+            ],
             const SizedBox(height: UniHubSpacing.x8),
             SectionTitle(
               'Sua semana',
@@ -65,6 +75,8 @@ class HomeTab extends ConsumerWidget {
                   style: const TextStyle(color: UniHubColors.textSecondary, fontSize: 13)),
               data: (st) => _WeekGoalCard(stats: st),
             ),
+            const SizedBox(height: UniHubSpacing.x8),
+            const ChallengeCard(),
             if (favorites.isNotEmpty) ...[
               const SizedBox(height: UniHubSpacing.x8),
               const SectionTitle('Suas favoritas'),
@@ -346,5 +358,49 @@ Future<void> showWeeklyGoalPicker(BuildContext context, WidgetRef ref, int curre
     await ref.read(authProvider.notifier).refreshProfile();
   } catch (e) {
     if (context.mounted) showApiError(context, e);
+  }
+}
+
+
+/// "Como foi o treino na X?" com atalho para dar as estrelas.
+class _RateLastVisit extends ConsumerWidget {
+  const _RateLastVisit({required this.checkin});
+
+  final CheckIn checkin;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      borderRadius: UniHubRadius.brMd,
+      onTap: () => showRatingSheet(context, ref, checkin),
+      child: Container(
+        padding: const EdgeInsets.all(UniHubSpacing.x4),
+        decoration: BoxDecoration(
+          borderRadius: UniHubRadius.brMd,
+          border: Border.all(color: UniHubColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Como foi o treino na ${checkin.gym.name}?',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  const StarsRow(stars: 0),
+                ],
+              ),
+            ),
+            const Text(
+              'Avaliar',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: UniHubColors.accent),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

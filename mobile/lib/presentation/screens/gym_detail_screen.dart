@@ -69,11 +69,23 @@ class GymDetailScreen extends ConsumerWidget {
               const SizedBox(height: UniHubSpacing.x6),
               Text(gym.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               const SizedBox(height: UniHubSpacing.x2),
-              AccessBadge(covered: covered, minTier: gym.minPlanTier),
+              Row(
+                children: [
+                  AccessBadge(covered: covered, minTier: gym.minPlanTier),
+                  if (gym.ratingAvg != null) ...[
+                    const SizedBox(width: UniHubSpacing.x3),
+                    RatingLabel(gym: gym, size: 13),
+                    Text(
+                      ' (${gym.ratingCount} ${gym.ratingCount == 1 ? 'avaliação' : 'avaliações'})',
+                      style: const TextStyle(fontSize: 13, color: UniHubColors.textSecondary),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: UniHubSpacing.x6),
               _InfoRow(
                 icon: LucideIcons.mapPin,
-                text: '${gym.address} · ${gymDistanceKm(gym).toStringAsFixed(1)} km',
+                text: '${gym.address} · ${formatDistance(gymDistanceKm(gym))}',
               ),
               const SizedBox(height: UniHubSpacing.x3),
               _InfoRow(icon: LucideIcons.clock, text: gym.openingHours),
