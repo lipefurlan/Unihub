@@ -51,9 +51,13 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     def model_post_init(self, __context) -> None:
-        # Railway/Heroku entregam "postgres://", mas o SQLAlchemy 2 exige "postgresql://"
-        if self.database_url.startswith("postgres://"):
-            self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
+        # Railway/Heroku entregam "postgres://" ou "postgresql://" sem driver.
+        # Fixamos o psycopg2 (o que está no requirements): o SQLAlchemy 2.1
+        # passou a usar o psycopg 3 como padrão e a API não subia sem ele.
+        for prefix in ("postgres://", "postgresql://"):
+            if self.database_url.startswith(prefix):
+                self.database_url = "postgresql+psycopg2://" + self.database_url[len(prefix):]
+                break
 
 
 settings = Settings()
