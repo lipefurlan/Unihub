@@ -157,6 +157,115 @@ class ProfileTab extends ConsumerWidget {
                     ],
                   ),
           ),
+          const SizedBox(height: UniHubSpacing.x12),
+          const _AboutFooter(),
+          const SizedBox(height: UniHubSpacing.x6),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rodapé com o símbolo. Easter egg: 5 toques seguidos no símbolo abrem
+/// o card de quem fez o UniHub.
+class _AboutFooter extends StatefulWidget {
+  const _AboutFooter();
+
+  @override
+  State<_AboutFooter> createState() => _AboutFooterState();
+}
+
+class _AboutFooterState extends State<_AboutFooter> {
+  int _taps = 0;
+  DateTime _last = DateTime(2000);
+
+  void _tap() {
+    final now = DateTime.now();
+    _taps = now.difference(_last) > const Duration(seconds: 2) ? 1 : _taps + 1;
+    _last = now;
+    if (_taps >= 5) {
+      _taps = 0;
+      showDialog<void>(context: context, builder: (_) => const _FoundersCard());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _tap,
+          behavior: HitTestBehavior.opaque,
+          child: const Padding(
+            padding: EdgeInsets.all(UniHubSpacing.x2),
+            child: UniHubSymbol(height: 22),
+          ),
+        ),
+        const SizedBox(height: UniHubSpacing.x1),
+        Text(
+          'UniHub · feito na FACAMP',
+          style: UniHubFonts.text(fontSize: 12, color: UniHubColors.textTertiary),
+        ),
+      ],
+    );
+  }
+}
+
+class _FoundersCard extends StatelessWidget {
+  const _FoundersCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.all(UniHubSpacing.x6),
+      shape: RoundedRectangleBorder(borderRadius: UniHubRadius.brLg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Stack(
+            children: [
+              AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.asset('assets/fundadores.jpg', fit: BoxFit.cover),
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: HalfMoonCurtain(radius: 9),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(UniHubSpacing.x5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const BrandLabel('Você achou'),
+                const SizedBox(height: UniHubSpacing.x1),
+                Text(
+                  'Quem fez o UniHub',
+                  style: UniHubFonts.display(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: UniHubSpacing.x2),
+                Text(
+                  'Alunos da FACAMP que queriam treinar entre uma aula e outra '
+                  'e resolveram fazer isso caber na rotina de todo universitário.',
+                  style: UniHubFonts.text(fontSize: 14, color: UniHubColors.textSecondary),
+                ),
+                const SizedBox(height: UniHubSpacing.x4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Bora treinar'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
