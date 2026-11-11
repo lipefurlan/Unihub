@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_models/shared_models.dart';
 
 import '../providers.dart';
-import '../widgets/common.dart';
 
 /// Carteirinha digital do estudante UniHub.
 class StudentCardScreen extends ConsumerWidget {
@@ -19,118 +19,157 @@ class StudentCardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Carteirinha digital')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(UniHubSpacing.x6),
-          child: AspectRatio(
+      body: ListView(
+        padding: const EdgeInsets.all(UniHubSpacing.x6),
+        children: [
+          const SizedBox(height: UniHubSpacing.x6),
+          AspectRatio(
             aspectRatio: 1.586, // proporção de cartão
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: UniHubColors.background,
-                borderRadius: UniHubRadius.brMd,
-                border: Border.all(color: UniHubColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Filete laranja no topo: o acento usado com intenção
-                  Container(
-                    height: 4,
-                    decoration: const BoxDecoration(
-                      color: UniHubColors.accent,
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(UniHubRadius.md)),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(UniHubSpacing.x5),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const UniHubWordmark(size: 18),
-                              Text(
-                                plan?.name.toUpperCase() ?? 'SEM PLANO',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
-                                  color: UniHubColors.accent,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Text(
-                            student.name,
-                            style:
-                                UniHubFonts.display(fontSize: 18, fontWeight: FontWeight.w800),
-                          ),
-                          Text(
-                            student.university,
-                            style: const TextStyle(
-                                fontSize: 13, color: UniHubColors.textSecondary),
-                          ),
-                          const SizedBox(height: UniHubSpacing.x4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'MATRÍCULA UNIHUB',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      letterSpacing: 1.2,
-                                      fontWeight: FontWeight.w600,
-                                      color: UniHubColors.textSecondary,
-                                    ),
-                                  ),
-                                  Text(
-                                    memberId,
-                                    style: UniHubStyles.money(size: 15),
-                                  ),
-                                ],
-                              ),
-                              const _FauxBarcode(),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                borderRadius: UniHubRadius.brLg,
+                boxShadow: [
+                  BoxShadow(
+                    color: UniHubColors.accent.withValues(alpha: 0.30),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
                   ),
                 ],
               ),
+              child: ClipRRect(
+                borderRadius: UniHubRadius.brLg,
+                child: ColoredBox(
+                  color: UniHubColors.accent,
+                  child: Stack(
+                    children: [
+                      const Positioned.fill(child: PaperGrain(opacity: 0.07)),
+                      const Positioned(
+                        left: 90,
+                        bottom: -90,
+                        child: SymbolOutline(height: 230, opacity: 0.32),
+                      ),
+                      // Cortina encostada na lateral direita, longe do logo
+                      const Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: HalfMoonCurtain(radius: 11, onOrange: true, vertical: true),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                            UniHubSpacing.x5, UniHubSpacing.x5, UniHubSpacing.x10, UniHubSpacing.x5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const UniHubLogo(height: 20, onOrange: true),
+                                BrandLabel(plan?.name ?? 'Sem plano',
+                                    color: Colors.white, size: 10),
+                              ],
+                            ),
+                            const Spacer(),
+                            Text(
+                              student.name,
+                              style: UniHubFonts.display(
+                                  fontSize: 21, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            Text(
+                              student.university,
+                              style: UniHubFonts.text(
+                                  fontSize: 13, color: Colors.white.withValues(alpha: 0.86)),
+                            ),
+                            const SizedBox(height: UniHubSpacing.x4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    BrandLabel('Matrícula UniHub',
+                                        color: Colors.white.withValues(alpha: 0.86), size: 9),
+                                    Text(
+                                      memberId,
+                                      style: UniHubStyles.money(
+                                          size: 16, weight: FontWeight.w800, color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                                _CardQr(data: memberId),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: UniHubSpacing.x8),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: student.subscription?.status == 'active'
+                      ? UniHubColors.success
+                      : UniHubColors.textTertiary,
+                ),
+              ),
+              const SizedBox(width: UniHubSpacing.x2),
+              Text(
+                student.subscription?.status == 'active'
+                    ? 'Plano ativo'
+                    : student.subscription?.status == 'paused'
+                        ? 'Plano pausado'
+                        : 'Sem plano ativo',
+                style: UniHubFonts.text(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: UniHubSpacing.x1),
+          Text(
+            'A recepção escaneia o QR para conferir sua matrícula na hora.',
+            style: UniHubFonts.text(fontSize: 13, color: UniHubColors.textSecondary),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Código de barras decorativo (o POC não integra catraca real).
-class _FauxBarcode extends StatelessWidget {
-  const _FauxBarcode();
+/// QR da matrícula num quadrado branco, para a recepção escanear na hora
+/// (módulos escuros sobre branco: leitores não leem QR invertido).
+class _CardQr extends StatelessWidget {
+  const _CardQr({required this.data});
+
+  final String data;
 
   @override
   Widget build(BuildContext context) {
-    const widths = [2.0, 1.0, 3.0, 1.0, 2.0, 1.0, 1.0, 3.0, 2.0, 1.0, 2.0, 3.0, 1.0, 2.0, 1.0, 3.0];
-    return Row(
-      children: [
-        for (final w in widths)
-          Container(
-            width: w,
-            height: 32,
-            margin: const EdgeInsets.only(right: 1.5),
-            color: UniHubColors.textPrimary,
-          ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: UniHubRadius.brMd,
+      ),
+      child: QrImageView(
+        data: data,
+        size: 62,
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.white,
+        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: UniHubColors.textPrimary),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: UniHubColors.textPrimary,
+        ),
+      ),
     );
   }
 }

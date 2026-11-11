@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_models/shared_models.dart';
 
@@ -19,11 +18,30 @@ class CheckinSuccessScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              const Icon(LucideIcons.circleCheck, size: 36, color: UniHubColors.accent),
-              const SizedBox(height: UniHubSpacing.x3),
-              const Text(
+              // "O encontro": os dois crescentes deslizam até se tocarem
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutBack,
+                builder: (_, meet, _) => Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Eco em traço fino do símbolo, por trás do cheio
+                    Opacity(
+                      opacity: meet.clamp(0, 1),
+                      child: const SymbolOutline(
+                          height: 120, color: UniHubColors.accent, opacity: 0.35, strokeWidth: 1),
+                    ),
+                    UniHubSymbol(height: 52, meet: meet),
+                  ],
+                ),
+              ),
+              const SizedBox(height: UniHubSpacing.x5),
+              const BrandLabel('Bom treino'),
+              const SizedBox(height: UniHubSpacing.x1),
+              Text(
                 'Check-in confirmado',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                style: UniHubFonts.display(fontSize: 26, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: UniHubSpacing.x2),
               Text(

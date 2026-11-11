@@ -198,17 +198,9 @@ class _AchievementsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: UniHubSpacing.x5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(UniHubSpacing.x5),
-          decoration: BoxDecoration(
-            borderRadius: UniHubRadius.brMd,
-            gradient: const LinearGradient(
-              colors: [UniHubColors.accent, Color(0xFFFF8A3D)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        // Laranja chapado com textura de papel (o manual não usa degradê)
+        BrandBlock(
+          outline: const Positioned(right: -40, top: -50, child: SymbolOutline(height: 170)),
           child: Row(
             children: [
               Expanded(
@@ -219,8 +211,8 @@ class _AchievementsSection extends StatelessWidget {
                       a.currentStreak == 0
                           ? 'Comece uma sequência'
                           : 'Sequência de ${a.currentStreak} ${a.currentStreak == 1 ? 'semana' : 'semanas'}',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: UniHubFonts.display(
+                          fontSize: 21, fontWeight: FontWeight.w900, color: Colors.white),
                     ),
                     const SizedBox(height: 4),
                     Text(

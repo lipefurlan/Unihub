@@ -6,7 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// Laranja UniHub é a plataforma (botões, símbolo, destaques) e o preto café
 /// é o universitário (textos). Papel, laranja claro e laranja brasa são cores
-/// de apoio. Sem gradientes, sem roxo, sem azul.
+/// de apoio. Sem gradientes, sem roxo, sem azul. Blocos de cor levam a
+/// textura de papel (PaperGrain) para não parecerem chapados.
 abstract final class UniHubColors {
   static const background = Color(0xFFFFFFFF);
   static const surface = Color(0xFFFFF7F2); // Papel: separa seções e cartões
@@ -67,14 +68,16 @@ abstract final class UniHubSpacing {
   static const double x12 = 48;
 }
 
-/// Raios: 6 e 8 px para campos e cartões; botões são em pílula, como no
-/// manual.
+/// Raios: 6 e 8 px para campos e cartões, 16 px para os blocos de marca
+/// (plano, carteirinha); botões são em pílula, como no manual.
 abstract final class UniHubRadius {
   static const double sm = 6;
   static const double md = 8;
+  static const double lg = 16;
   static const double pill = 999;
   static final BorderRadius brSm = BorderRadius.circular(sm);
   static final BorderRadius brMd = BorderRadius.circular(md);
+  static final BorderRadius brLg = BorderRadius.circular(lg);
   static final BorderRadius brPill = BorderRadius.circular(pill);
 }
 
