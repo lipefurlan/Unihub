@@ -71,7 +71,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Expanded(flex: 5, child: _BrandPanel()),
+                const Expanded(
+                  flex: 5,
+                  child: LoginPhotoHero(
+                    sideways: true,
+                    headlineSize: 46,
+                    headline: 'Uma assinatura,\nvárias academias.',
+                    caption:
+                        'Academias perto do campus, com check-in pelo app e o subsídio da sua faculdade.',
+                  ),
+                ),
                 Expanded(
                   flex: 6,
                   child: SafeArea(
@@ -93,7 +102,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _BrandHeader(),
+                const SizedBox(
+                  height: 380,
+                  child: LoginPhotoHero(headline: 'Uma assinatura,\nvárias academias.'),
+                ),
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -231,110 +243,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _DemoBox(onPressed: _loading ? null : _fillDemo),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Bloco de marca da tela de login no celular: laranja com textura, logo
-/// branco e a cortina de meias-luas fechando a borda de baixo.
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: UniHubColors.accent,
-      child: Stack(
-        children: [
-          const Positioned.fill(child: PaperGrain()),
-          const Positioned(right: -70, top: -40, child: SymbolOutline(height: 200)),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    UniHubSpacing.x6,
-                    UniHubSpacing.x10,
-                    UniHubSpacing.x6,
-                    UniHubSpacing.x8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const UniHubLogo(height: 34, onOrange: true),
-                      const SizedBox(height: UniHubSpacing.x4),
-                      Text(
-                        'Bem-estar para a sua\nvida universitária.',
-                        style: UniHubFonts.display(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const HalfMoonCurtain(radius: 10, onOrange: true),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Painel de marca à esquerda no computador.
-class _BrandPanel extends StatelessWidget {
-  const _BrandPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: UniHubColors.accent,
-      child: Stack(
-        children: [
-          const Positioned.fill(child: PaperGrain()),
-          const Positioned(right: -140, top: -60, child: SymbolOutline(height: 420)),
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: SizedBox(
-              width: 24,
-              child: const HalfMoonCurtain(radius: 12, onOrange: true, vertical: true),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(72, 56, 56, 56),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const UniHubLogo(height: 36, onOrange: true),
-                const Spacer(),
-                Text(
-                  'Bem-estar para a sua\nvida universitária.',
-                  style: UniHubFonts.display(fontSize: 40, color: Colors.white, letterSpacing: -0.5),
-                ),
-                const SizedBox(height: UniHubSpacing.x4),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Text(
-                    'Academias perto do campus, com check-in pelo app e o subsídio da sua faculdade.',
-                    style: UniHubFonts.text(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
