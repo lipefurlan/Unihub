@@ -18,5 +18,6 @@ export 'src/models/subscription.dart';
 export 'src/models/university.dart';
 export 'src/theme/brand_graphics.dart';
 export 'src/theme/formatters.dart';
+export 'src/theme/login_hero.dart';
 export 'src/theme/unihub_logo.dart';
 export 'src/theme/unihub_theme.dart';

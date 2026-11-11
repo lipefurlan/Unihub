@@ -62,132 +62,170 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(UniHubSpacing.x6),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(
-                    child: UniHubWordmark(size: 28, suffix: 'painel'),
+      backgroundColor: UniHubColors.surface,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final form = ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: _buildForm(context),
+          );
+          if (constraints.maxWidth >= 900) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Expanded(
+                  flex: 5,
+                  child: LoginPhotoHero(
+                    sideways: true,
+                    headlineSize: 40,
+                    headline: 'Academias, faculdades\ne alunos no mesmo lugar.',
+                    caption:
+                        'Painel das academias parceiras, das faculdades conveniadas e da operação UniHub.',
                   ),
-                  const SizedBox(height: UniHubSpacing.x2),
-                  const Text(
-                    'Acesso para academias parceiras, faculdades conveniadas e operação UniHub.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: UniHubColors.textSecondary,
+                ),
+                Expanded(
+                  flex: 6,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(UniHubSpacing.x10),
+                      child: form,
                     ),
                   ),
-                  const SizedBox(height: UniHubSpacing.x10),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'E-mail'),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v == null || !v.contains('@')
-                        ? 'Informe um e-mail válido'
-                        : null,
+                ),
+              ],
+            );
+          }
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(
+                  height: 300,
+                  child: LoginPhotoHero(
+                    headlineSize: 28,
+                    headline: 'Academias, faculdades\ne alunos no mesmo lugar.',
                   ),
-                  const SizedBox(height: UniHubSpacing.x4),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'Senha'),
-                    obscureText: true,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Informe a senha' : null,
+                ),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(UniHubSpacing.x6),
+                    child: form,
                   ),
-                  const SizedBox(height: UniHubSpacing.x6),
-                  FilledButton(
-                    onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Entrar no painel'),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => context.go('/esqueci-senha'),
-                      child: const Text('Esqueci minha senha'),
-                    ),
-                  ),
-                  if (googleLoginEnabled) ...[
-                    const OrDivider(),
-                    const SizedBox(height: UniHubSpacing.x4),
-                    GoogleLoginButton(
-                      onIdToken: _googleLogin,
-                      onError: (e) => showApiError(context, e),
-                    ),
-                  ],
-                  const SizedBox(height: UniHubSpacing.x8),
-                  const Text(
-                    'Demonstração',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: UniHubColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: UniHubSpacing.x2),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          style: _demoStyle,
-                          onPressed: _loading
-                              ? null
-                              : () => _loginAsDemo(
-                                  'contato@campusfit.com.br',
-                                  'academia123',
-                                ),
-                          child: const Text('Academia'),
-                        ),
-                      ),
-                      const SizedBox(width: UniHubSpacing.x3),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: _demoStyle,
-                          onPressed: _loading
-                              ? null
-                              : () => _loginAsDemo(
-                                  'admin@unihub.com.br',
-                                  'admin123',
-                                ),
-                          child: const Text('Operação'),
-                        ),
-                      ),
-                      const SizedBox(width: UniHubSpacing.x3),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: _demoStyle,
-                          onPressed: _loading
-                              ? null
-                              : () => _loginAsDemo(
-                                  'programa@facamp.edu.br',
-                                  'facamp123',
-                                ),
-                          child: const Text('Faculdade'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    Widget demo(String label, String email, String password) => Expanded(
+          child: OutlinedButton(
+            style: _demoStyle,
+            onPressed: _loading ? null : () => _loginAsDemo(email, password),
+            child: Text(label),
+          ),
+        );
+
+    return AutofillGroup(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const BrandLabel('Painel UniHub'),
+            const SizedBox(height: UniHubSpacing.x1),
+            Text(
+              'Entrar no painel',
+              style: UniHubFonts.display(fontSize: 30, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: UniHubSpacing.x1),
+            Text(
+              'Para academias parceiras, faculdades conveniadas e a operação.',
+              style: UniHubFonts.text(fontSize: 14, color: UniHubColors.textSecondary),
+            ),
+            const SizedBox(height: UniHubSpacing.x6),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'E-mail',
+                filled: true,
+                fillColor: Colors.white,
+                prefixIcon: Icon(Icons.mail_outline_rounded, size: 20),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              validator: (v) =>
+                  v == null || !v.contains('@') ? 'Informe um e-mail válido' : null,
+            ),
+            const SizedBox(height: UniHubSpacing.x4),
+            TextFormField(
+              controller: _passwordController,
+              decoration: const InputDecoration(
+                labelText: 'Senha',
+                filled: true,
+                fillColor: Colors.white,
+                prefixIcon: Icon(Icons.lock_outline_rounded, size: 20),
+              ),
+              obscureText: true,
+              autofillHints: const [AutofillHints.password],
+              onFieldSubmitted: (_) => _submit(),
+              validator: (v) => v == null || v.isEmpty ? 'Informe a senha' : null,
+            ),
+            const SizedBox(height: UniHubSpacing.x2),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: UniHubSpacing.x1),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: UniHubFonts.text(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                onPressed: () => context.go('/esqueci-senha'),
+                child: const Text('Esqueci minha senha'),
               ),
             ),
-          ),
+            const SizedBox(height: UniHubSpacing.x5),
+            SizedBox(
+              height: 52,
+              child: FilledButton(
+                onPressed: _loading ? null : _submit,
+                child: _loading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Entrar no painel'),
+              ),
+            ),
+            if (googleLoginEnabled) ...[
+              const SizedBox(height: UniHubSpacing.x4),
+              const OrDivider(),
+              const SizedBox(height: UniHubSpacing.x4),
+              GoogleLoginButton(
+                onIdToken: _googleLogin,
+                onError: (e) => showApiError(context, e),
+              ),
+            ],
+            const SizedBox(height: UniHubSpacing.x10),
+            BrandLabel('Entrar como demonstração', color: UniHubColors.textTertiary, size: 10.5),
+            const SizedBox(height: UniHubSpacing.x3),
+            Row(
+              children: [
+                demo('Academia', 'contato@campusfit.com.br', 'academia123'),
+                const SizedBox(width: UniHubSpacing.x2),
+                demo('Faculdade', 'programa@facamp.edu.br', 'facamp123'),
+                const SizedBox(width: UniHubSpacing.x2),
+                demo('Operação', 'admin@unihub.com.br', 'admin123'),
+              ],
+            ),
+          ],
         ),
       ),
     );
