@@ -17,6 +17,7 @@ import 'screens/profile_tab.dart';
 import 'screens/register_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/student_card_screen.dart';
+import 'screens/swipeable_tabs.dart';
 import 'screens/verify_email_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -84,8 +85,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/confirmar-email', builder: (context, state) => const VerifyEmailScreen()),
       GoRoute(path: '/card', builder: (context, state) => const StudentCardScreen()),
       GoRoute(path: '/desafio', builder: (context, state) => const ChallengeScreen()),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, shell) => ShellScreen(shell: shell),
+        // Abas lado a lado num PageView: dá para trocar arrastando o dedo
+        navigatorContainerBuilder: (context, shell, children) =>
+            SwipeableTabs(shell: shell, children: children),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/home', builder: (context, state) => const HomeTab()),
